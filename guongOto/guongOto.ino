@@ -6,6 +6,10 @@ int downButton = 5;  // nút nhấn xuống
 int leftButton = 6;  // nút nhấn trái
 int rightButton = 7; // nút nhấn phải
 //output
+/*
+   Motor 1:
+   IN1:HIGH, IN2:LOW  --> out1-ON, out2-OFF
+*/
 int IN1 = 8; //motor up-down
 int IN2 = 9; //motor up-down
 int IN3 = 10; //motor left-right
@@ -16,7 +20,7 @@ int IN6 = 13; //motor lock-unlock
 
 void setup()
 {
-  Serial.print(9600);
+  Serial.begin(9600);
 
   pinMode(lockButton, INPUT);
   pinMode(unLockButton, INPUT);
@@ -35,82 +39,98 @@ void setup()
   stopLeftRight();
   stopLockUnLock();
 };
-
-void loop() {
+/*
+  void loop() {
   moveUp();
+  Serial.println("move up");
   delay(5000);
   moveDown();
+  Serial.println("move down");
   delay(5000);
   moveLeft();
+  Serial.println("move left");
   delay(5000);
   moveRight();
+  Serial.println("move right");
   delay(5000);
   doLock();
+  Serial.println("lock");
   delay(5000);
   doUnlock();
+  Serial.println("unLock");
   delay(5000);
-}
+  }
+*/
 
 //------functions--------------
 //up-down
 void moveUp() {
+  Serial.println("move up");
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
 };
 void stopUpDown() {
+//  Serial.println("stop up down");
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
 };
 void moveDown() {
+  Serial.println("move down");
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
 };
 //left-right
 void moveLeft() {
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
+  Serial.println("move left");
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
 };
 void stopLeftRight() {
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, LOW);
 };
 void moveRight() {
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
+  Serial.println("move right");
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
 };
 //lock-unlock
 void doLock() {
-  digitalWrite(IN5, LOW);
-  digitalWrite(IN6, HIGH);;
+  Serial.println("Gập gương ...");
+  digitalWrite(IN5, HIGH);
+  digitalWrite(IN6, LOW);;
 };
 void stopLockUnLock() {
   digitalWrite(IN5, LOW);
   digitalWrite(IN6, LOW);
 }
 void doUnlock() {
-  digitalWrite(IN5, HIGH);
-  digitalWrite(IN6, LOW);
+  Serial.println("Mở gương ...");
+  digitalWrite(IN5, LOW);
+  digitalWrite(IN6, HIGH);
 };
 
-/*
-  void loop() {
+void loop() {
   int lock =  digitalRead(lockButton);
   int unLock = digitalRead(unLockButton);
   int up =  digitalRead(upButton);
   int down = digitalRead(downButton);
   int left = digitalRead(leftButton);
   int right = digitalRead(rightButton);
+  Serial.print(lock);
+  Serial.print("--");
+  Serial.println(unLock);
   //lock-unlock
   if (lock == 1) {
     while (digitalRead(lockButton) == 1);
-    Serial.println("Gập gương ...");
+
     doLock();
     delay(4000);
     stopLockUnLock();
   };
   if (unLock == 1) {
     while (digitalRead(unLockButton) == 1);
-    Serial.println("Mở gương ...");
+
     doUnlock();
     delay(4000);
     stopLockUnLock();
@@ -131,5 +151,4 @@ void doUnlock() {
   } else {
     moveDown();
   }
-  }
-*/
+}
