@@ -1,0 +1,13 @@
+Temperature alarm
+Component:
+- Module thu phát Wifi ESP8266 NodeMCU Lua CP2102 (https://nshopvn.com/product/module-thu-phat-wifi-esp8266-nodemcu-lua-cp2102/)
+- Cảm biến nhiệt độ DS18B20 dây mềm 1m (https://nshopvn.com/product/cam-bien-nhiet-do-ds18b20-day/?variant=34007)
+- Điện trở 4.7k
+- LCD 1602 kèm module I2C màu xanh lá (https://nshopvn.com/product/lcd-1602-kem-module-i2c-mau-xanh-la/)
+- Led 2 chân màu đỏ, màu xanh lá
+- Còi chip chủ động 5V (https://nshopvn.com/product/coi-buzz-chu-dong-5v/)
+- Dây bus 3 pin (https://nshopvn.com/product/day-bus-3-pin-dai-70cm/)
+- Dây Cắm Test Board Đực Đực 20cm (https://nshopvn.com/product/day-cam-test-board-duc-duc-20cm-1-soi/)
+- Dây Cắm Test Board Đực Cái 20cm 
+- Test board, bread board 165x54mm 830 lỗ (https://nshopvn.com/product/test-board-bread-board-165x54mm-830-lo/)
+- Cáp micro USB (dùng nạp code cho ESP8266, giống cáp sạc điện thoại)
