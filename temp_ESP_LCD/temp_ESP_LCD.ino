@@ -8,6 +8,7 @@
 // LCD pins
 #define SDA_PIN D4
 #define SCL_PIN D5
+//LED, buzzer
 #define LED_ALARM D8
 #define LED_NORMAL D7
 #define buzzer D6
@@ -24,7 +25,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // The I2C address may be different in your 
 float tempC;
 float previousTemp;
 float tempAlarm = 32;
-float tempMin = 31;
+float tempMin = 30;
 
 void setup() {
 
@@ -46,18 +47,17 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("Cam bien DS18B20");
 
-  delay(5000);
-
   DS18B20.begin();
 
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Nhiet do: ");
+  lcd.print("Nhiet do: ");  
 
   lcd.setCursor(0, 1);
   lcd.print("Nhiet bao: ");
   lcd.setCursor(14, 1);
   lcd.print(tempAlarm);
+  delay(5000);
 }
 
 void getTemperature() {
