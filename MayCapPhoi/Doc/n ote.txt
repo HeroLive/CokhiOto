@@ -1,0 +1,5 @@
+động cơ 1 step motor 42x42x48 (.44Nm) và 42x42x60(1.8Nm) loại 1.8 độ 
+belt GT2
+vít me 8 bước 2
+xi lanh= van điện ZK2+van airtac 5/2
+circle time mong muốn chu kỳ (hút -> đặt, quay lại)5->10s
