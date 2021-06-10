@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>
+#include <AccelStepper.h>
 
 //driver for the axis 1 - X
 #define PUL1_PIN 2
@@ -10,11 +11,15 @@
 #define PUL2_PIN 4
 #define DIR2_PIN 7
 
+AccelStepper stepper1(AccelStepper::DRIVER, PUL1_PIN, DIR1_PIN);
+AccelStepper stepper2(AccelStepper::DRIVER, PUL2_PIN, DIR2_PIN);
+
 #define CONT A3
 #define DOWN A0
 #define MODE A1
 #define UP A2
-boolean DIR2 = LOW;
+#define SpnEn 12
+
 
 #define STATE_STARTUP 0
 #define STATE_Z1 1
@@ -32,13 +37,14 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // or 0x3F
 byte currentState = STATE_STARTUP;
 unsigned long LastStateChangeTime;
 
-long steps[2] = {0, 0};
-int microStep[2] = {16, 16};
-float angleStep[2] = {1.8, 1.8};
-float gear[2] = {1, 1};
-float positions[2] = {0, 0};
 
-float curSpeed = 20;
+int microStep[2] = {4, 1};
+float angleStep[2] = {1.8, 1.8};
+float disPerRound[2] = {40, 2};
+float positions[3] = {440, 2, 4}; //11 - 1 - 2
+long steps[3] = {0, 0, 0};
+
+float curSpeed = 200;
 
 
 void setup() {
@@ -50,7 +56,10 @@ void setup() {
   pinMode(PUL2_PIN, OUTPUT);
   pinMode(DIR2_PIN, OUTPUT);
   pinMode(EN1_PIN, OUTPUT);
+  pinMode(SpnEn, OUTPUT);
+
   digitalWrite(EN1_PIN, LOW);
+  digitalWrite(SpnEn, LOW);
   //
   lcd.init();
   lcd.backlight();
@@ -60,7 +69,12 @@ void setup() {
   lcd.print("Cap phoi tu dong");
   delay(3000);
   lcd.clear();
-
+  steps[0] = positions[0] * 360 / angleStep[0] * microStep[0] / disPerRound[0];
+  steps[1] = positions[1] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
+  steps[2] = positions[2] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
+  for (int i = 0; i < 3; i++) {
+    Serial.println(steps[i]);
+  }
 }
 
 void loop() {
@@ -175,14 +189,40 @@ void updateState(byte aState) {
       break;
     case STATE_MOVING:
       Serial.println("STATE_MOVING");
-      delay(2000);
+      moving();
       currentState = STATE_WAITMOVE;
       break;
   }
 }
 
 void updateLCD() {}
+void moving() {
+  stepper1.setMaxSpeed(8000.0);
+  stepper1.setAcceleration(4000.0);
+  stepper2.setMaxSpeed(2000.0);
+  stepper2.setAcceleration(1500.0);
 
+  digitalWrite(SpnEn, LOW);
+  stepper1.runToNewPosition(steps[0]);
+  delay(500);
+
+  stepper2.runToNewPosition(steps[1]);
+  delay(200);
+  digitalWrite(SpnEn, HIGH);
+
+  stepper2.runToNewPosition(0);
+  delay(200);
+
+  stepper1.runToNewPosition(0);
+  delay(200);
+
+  stepper2.runToNewPosition(steps[2]);
+  delay(200);
+  digitalWrite(SpnEn, LOW);
+  delay(200);
+
+  stepper2.runToNewPosition(0);
+}
 void moveOne(char m, char LR) {
   if (LR == 'L') {
     digitalWrite(DIR1_PIN, HIGH);
