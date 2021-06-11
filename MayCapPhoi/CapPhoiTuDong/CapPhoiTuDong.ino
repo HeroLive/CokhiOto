@@ -27,24 +27,32 @@ AccelStepper stepper2(AccelStepper::DRIVER, PUL2_PIN, DIR2_PIN);
 #define STATE_X 3
 #define STATE_SPEED 4
 #define STATE_HOMEX 5
-#define STATE_HOMEZ 6
-#define STATE_WAITSTART 7
-#define STATE_WAITMOVE 8
-#define STATE_MOVING 9
+#define STATE_HOMEZ1 6
+#define STATE_HOMEZ2 7
+#define STATE_WAITSTART 8
+#define STATE_WAITMOVE 9
+#define STATE_MOVING 10
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // or 0x3F
 
-byte currentState = STATE_STARTUP;
-unsigned long LastStateChangeTime;
+byte currentState = STATE_STARTUP; //STATE_WAITSTART;//
 
 
 int microStep[2] = {4, 1};
 float angleStep[2] = {1.8, 1.8};
-float disPerRound[2] = {40, 2};
-float positions[3] = {440, 2, 4}; //11 - 1 - 2
+float disPerRound[2] = {40, 8};
+float positions[3] = {503, 140, 200}; //11 - 1 - 2
 long steps[3] = {0, 0, 0};
+long maxSpeeds[2] = {50000, 2000};
+long acceleration[2] = {40000, 1500};
 
-float curSpeed = 200;
+float setPositions[3] = {500,  130, 190};
+long setSteps[3] = {0, 0, 0};
+
+float PercentSpeed = 10;
+
+long N = 0;
+long t = 0;
 
 
 void setup() {
@@ -69,63 +77,75 @@ void setup() {
   lcd.print("Cap phoi tu dong");
   delay(3000);
   lcd.clear();
-  steps[0] = positions[0] * 360 / angleStep[0] * microStep[0] / disPerRound[0];
-  steps[1] = positions[1] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
-  steps[2] = positions[2] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
-  for (int i = 0; i < 3; i++) {
-    Serial.println(steps[i]);
-  }
 }
 
 void loop() {
-  //  delay(200);
-  //  Serial.print(analogRead(STOP));
+  //  Serial.print(positions[0]);
   //  Serial.print(" ");
-  //  Serial.print(analogRead(DOWN));
+  //  Serial.print(positions[1]);
   //  Serial.print(" ");
-  //  Serial.print(analogRead(MODE));
+  //  Serial.print(positions[2]);
   //  Serial.print(" ");
-  //  Serial.println(analogRead(UP));
-  updateState(currentState);
+  //  Serial.println(PercentSpeed);
   updateLCD();
+  updateState(currentState);
 }
 void updateState(byte aState) {
   switch (aState)
   {
     case STATE_STARTUP:
       Serial.println("STATE_STARTUP");
-      if (analogRead(MODE) > 500) {
-        while (analogRead(MODE) > 500);
-        currentState = STATE_Z1;
-        lcd.clear();
-      }
+      currentState = STATE_Z1;
+      //      if (analogRead(MODE) > 500) {
+      //        while (analogRead(MODE) > 500);
+      //        currentState = STATE_Z1;
+      //        //lcd.clear();
+      //      }
       break;
     case STATE_Z1:
       Serial.println("STATE_Z1");
+      positions[1] = ajustValue(STATE_Z1);
+      Serial.println(positions[1]);
       if (analogRead(MODE) > 500) {
         while (analogRead(MODE) > 500);
         currentState = STATE_Z2;
-        lcd.clear();
+        //lcd.clear();
       }
       break;
     case STATE_Z2:
       Serial.println("STATE_Z2");
+      positions[2] = ajustValue(STATE_Z2);
       if (analogRead(MODE) > 500) {
         while (analogRead(MODE) > 500);
         currentState = STATE_X;
-        lcd.clear();
+        //lcd.clear();
       }
       break;
     case STATE_X:
       Serial.println("STATE_X");
+      positions[0] = ajustValue(STATE_X);
       if (analogRead(MODE) > 500) {
         while (analogRead(MODE) > 500);
-        currentState = STATE_SPEED;
+        currentState = STATE_HOMEZ1;
         lcd.clear();
       }
       break;
     case STATE_SPEED:
       Serial.println("STATE_SPEED");
+      PercentSpeed = ajustValue(STATE_SPEED);
+      if (analogRead(MODE) > 500) {
+        while (analogRead(MODE) > 500);
+        currentState = STATE_HOMEZ1;
+        lcd.clear();
+      }
+      break;
+    case STATE_HOMEZ1:
+      Serial.println("STATE_HOMEZ1");
+      setPositions[1] = ajustValue(STATE_HOMEZ1);
+      if (analogRead(CONT) > 500) {
+        while (analogRead(CONT) > 500);
+        moveOne('1');
+      }
       if (analogRead(MODE) > 500) {
         while (analogRead(MODE) > 500);
         currentState = STATE_HOMEX;
@@ -134,38 +154,32 @@ void updateState(byte aState) {
       break;
     case STATE_HOMEX:
       Serial.println("STATE_HOMEX");
+      setPositions[0] = ajustValue(STATE_HOMEX);
+      if (analogRead(CONT) > 500) {
+        while (analogRead(CONT) > 500);
+        moveOne('0');
+      }
       if (analogRead(MODE) > 500) {
         while (analogRead(MODE) > 500);
-        currentState = STATE_HOMEZ;
+        currentState = STATE_HOMEZ2;
+        N = 0;
         lcd.clear();
       }
-      if (analogRead(UP) > 500) {
-        while (analogRead(UP) > 500) {
-          moveOne('X', 'R');
-        }
-      } else if (analogRead(DOWN) > 500) {
-        while (analogRead(DOWN) > 500) {
-          moveOne('X', 'L');
-        }
-      }
       break;
-    case STATE_HOMEZ:
-      Serial.println("STATE_HOMEZ");
+    case STATE_HOMEZ2:
+      Serial.println("STATE_HOMEZ2");
+      setPositions[2] = ajustValue(STATE_HOMEZ2);
+      if (analogRead(CONT) > 500) {
+        while (analogRead(CONT) > 500);
+        moveOne('2');
+      }
       if (analogRead(MODE) > 500) {
         while (analogRead(MODE) > 500);
         currentState = STATE_WAITSTART;
         lcd.clear();
       }
-      if (analogRead(UP) > 500) {
-        while (analogRead(UP) > 500) {
-          moveOne('Z', 'R');
-        }
-      } else if (analogRead(DOWN) > 500) {
-        while (analogRead(DOWN) > 500) {
-          moveOne('Z', 'L');
-        }
-      }
       break;
+
     case STATE_WAITSTART:
       Serial.println("STATE_WAITSTART");
       if (analogRead(UP) > 500) {
@@ -183,6 +197,7 @@ void updateState(byte aState) {
       Serial.println("STATE_WAITMOVE");
       if (analogRead(CONT) > 500) {
         currentState = STATE_MOVING;
+        lcd.clear();
       } else {
         currentState = STATE_WAITSTART;
       }
@@ -190,25 +205,73 @@ void updateState(byte aState) {
     case STATE_MOVING:
       Serial.println("STATE_MOVING");
       moving();
+      N++;
       currentState = STATE_WAITMOVE;
       break;
   }
 }
 
-void updateLCD() {}
+float ajustValue(byte mode) {
+  int count = 0;
+  if (analogRead(UP) > 500) {
+    count++;
+    while (analogRead(UP) > 500);
+  } else if (analogRead(DOWN) > 500) {
+    count--;
+    while (analogRead(DOWN) > 500);
+  }
+  switch (mode)
+  {
+    case STATE_Z1:
+      return positions[1] + count > 0 ? positions[1] + count : 1;
+      break;
+    case STATE_Z2:
+      return positions[2] + count > 0 ? positions[2] + count : 1;
+      break;
+    case STATE_X:
+      return positions[0] + count > 100 ? positions[0] + count : 100;
+      break;
+    case STATE_HOMEX:
+      return setPositions[0] + count;
+      break;
+    case STATE_HOMEZ1:
+      return setPositions[1] + count;
+      break;
+    case STATE_HOMEZ2:
+      return setPositions[2] + count;
+      break;
+    case STATE_SPEED:
+      PercentSpeed = PercentSpeed + 1 * count;
+      if (PercentSpeed < 10) {
+        PercentSpeed = 10;
+      } else if (PercentSpeed > 100) {
+        PercentSpeed = 100;
+      }
+      return PercentSpeed;
+      break;
+  }
+}
+
 void moving() {
-  stepper1.setMaxSpeed(8000.0);
-  stepper1.setAcceleration(4000.0);
-  stepper2.setMaxSpeed(2000.0);
-  stepper2.setAcceleration(1500.0);
+  steps[0] = positions[0] * 360 / angleStep[0] * microStep[0] / disPerRound[0];
+  steps[1] = positions[1] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
+  steps[2] = positions[2] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
+  stepper1.setMaxSpeed(maxSpeeds[0]);
+  stepper1.setAcceleration(acceleration[0]);
+  stepper2.setMaxSpeed(maxSpeeds[1]);
+  stepper2.setAcceleration(acceleration[1]);
 
   digitalWrite(SpnEn, LOW);
+  stepper1.runToNewPosition(0);
+  stepper2.runToNewPosition(0);
+
   stepper1.runToNewPosition(steps[0]);
   delay(500);
 
   stepper2.runToNewPosition(steps[1]);
   delay(200);
   digitalWrite(SpnEn, HIGH);
+  delay(1000);
 
   stepper2.runToNewPosition(0);
   delay(200);
@@ -219,29 +282,137 @@ void moving() {
   stepper2.runToNewPosition(steps[2]);
   delay(200);
   digitalWrite(SpnEn, LOW);
-  delay(200);
+  delay(1000);
 
   stepper2.runToNewPosition(0);
 }
-void moveOne(char m, char LR) {
-  if (LR == 'L') {
-    digitalWrite(DIR1_PIN, HIGH);
-    digitalWrite(DIR2_PIN, HIGH);
+void moveOne(char m) {
+  setSteps[0] = setPositions[0] * 360 / angleStep[0] * microStep[0] / disPerRound[0];
+  setSteps[1] = setPositions[1] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
+  setSteps[2] = setPositions[2] * 360 / angleStep[1] * microStep[1] / disPerRound[1];
+  stepper1.setMaxSpeed(maxSpeeds[0]);
+  stepper1.setAcceleration(acceleration[0]);
+  stepper2.setMaxSpeed(maxSpeeds[1]);
+  stepper2.setAcceleration(acceleration[1]);
+  if (m == '0') {
+    stepper1.runToNewPosition(setSteps[0]);
+  } else if (m == '1') {
+    stepper2.runToNewPosition(setSteps[1]);
+  } else if (m == '2') {
+    stepper2.runToNewPosition(setSteps[2]);
   }
-  if (LR == 'R') {
-    digitalWrite(DIR1_PIN, LOW);
-    digitalWrite(DIR2_PIN, LOW);
+}
+void updateLCD() {
+  switch (currentState)
+  {
+    case STATE_HOMEX:
+    case STATE_HOMEZ1:
+    case STATE_HOMEZ2:
+      setLCD();
+      break;
+    case STATE_STARTUP:
+    case STATE_Z1:
+    case STATE_Z2:
+    case STATE_X:
+    case STATE_SPEED:
+    case STATE_WAITSTART:
+    case STATE_WAITMOVE:
+    case STATE_MOVING:
+      modeLCD();
+      break;
   }
-  if (m == 'X') {
-    digitalWrite(PUL1_PIN, HIGH);
-    delayMicroseconds(curSpeed);
-    digitalWrite(PUL1_PIN, LOW);
-    delayMicroseconds(curSpeed);
+}
+
+void modeLCD() {
+  char f1 = ':';
+  char f2 = ':';
+  char f3 = ':';
+  char f4 = ':';
+  char s_ = ' ';
+
+  switch (currentState)
+  {
+    case STATE_WAITSTART:
+      s_ = 'S';
+      break;
   }
-  if (m == 'Z') {
-    digitalWrite(PUL2_PIN, HIGH);
-    delayMicroseconds(curSpeed);
-    digitalWrite(PUL2_PIN, LOW);
-    delayMicroseconds(curSpeed);
+
+  if ((millis() * 5 / 1000) % 2 == 0) {
+    switch (currentState)
+    {
+      case STATE_Z1:
+        f1 = ' ';
+        break;
+      case STATE_Z2:
+        f2 = ' ';
+        break;
+      case STATE_X:
+        f3 = ' ';
+        break;
+      case STATE_SPEED:
+        f4 = ' ';
+        break;
+
+    }
   }
+  lcd.setCursor(0, 0);
+  lcd.print("Z1");
+  lcd.print(f1);
+  lcd.print(positions[1], 0);
+  lcd.print("  ");
+  lcd.setCursor(7, 0);
+  lcd.print("Z2");
+  lcd.print(f2);
+  lcd.print(positions[2], 0);
+
+  lcd.setCursor(0, 1);
+  lcd.print("X");
+  lcd.print(f3);
+  lcd.print(positions[0], 0);
+  lcd.print("  ");
+  lcd.setCursor(7, 1);
+  lcd.print("N:");
+  lcd.print(N);
+
+  lcd.setCursor(15, 1);
+  lcd.print(s_);
+}
+
+void setLCD() {
+  char f1 = ':';
+  char f2 = ':';
+  char f3 = ':';
+
+  if ((millis() * 5 / 1000) % 2 == 0) {
+    switch (currentState)
+    {
+      case STATE_HOMEZ1:
+        f1 = ' ';
+        break;
+      case STATE_HOMEZ2:
+        f2 = ' ';
+        break;
+      case STATE_HOMEX:
+        f3 = ' ';
+        break;
+    }
+  }
+  lcd.setCursor(0, 0);
+  lcd.print("Z1");
+  lcd.print(f1);
+  lcd.print(setPositions[1], 0);
+  lcd.print("  ");
+  lcd.setCursor(7, 0);
+  lcd.print("Z2");
+  lcd.print(f2);
+  lcd.print(setPositions[2], 0);
+
+  lcd.setCursor(0, 1);
+  lcd.print("X");
+  lcd.print(f3);
+  lcd.print(setPositions[0], 0);
+  lcd.print("  ");
+
+  lcd.setCursor(13, 1);
+  lcd.print("SET");
 }
