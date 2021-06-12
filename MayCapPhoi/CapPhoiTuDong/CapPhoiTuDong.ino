@@ -95,49 +95,12 @@ void updateState(byte aState) {
   {
     case STATE_STARTUP:
       Serial.println("STATE_STARTUP");
-      currentState = STATE_Z1;
+      currentState = STATE_HOMEZ1;
       //      if (analogRead(MODE) > 500) {
       //        while (analogRead(MODE) > 500);
       //        currentState = STATE_Z1;
       //        //lcd.clear();
       //      }
-      break;
-    case STATE_Z1:
-      Serial.println("STATE_Z1");
-      positions[1] = ajustValue(STATE_Z1);
-      Serial.println(positions[1]);
-      if (analogRead(MODE) > 500) {
-        while (analogRead(MODE) > 500);
-        currentState = STATE_Z2;
-        //lcd.clear();
-      }
-      break;
-    case STATE_Z2:
-      Serial.println("STATE_Z2");
-      positions[2] = ajustValue(STATE_Z2);
-      if (analogRead(MODE) > 500) {
-        while (analogRead(MODE) > 500);
-        currentState = STATE_X;
-        //lcd.clear();
-      }
-      break;
-    case STATE_X:
-      Serial.println("STATE_X");
-      positions[0] = ajustValue(STATE_X);
-      if (analogRead(MODE) > 500) {
-        while (analogRead(MODE) > 500);
-        currentState = STATE_HOMEZ1;
-        lcd.clear();
-      }
-      break;
-    case STATE_SPEED:
-      Serial.println("STATE_SPEED");
-      PercentSpeed = ajustValue(STATE_SPEED);
-      if (analogRead(MODE) > 500) {
-        while (analogRead(MODE) > 500);
-        currentState = STATE_HOMEZ1;
-        lcd.clear();
-      }
       break;
     case STATE_HOMEZ1:
       Serial.println("STATE_HOMEZ1");
@@ -173,6 +136,45 @@ void updateState(byte aState) {
         while (analogRead(CONT) > 500);
         moveOne('2');
       }
+      if (analogRead(MODE) > 500) {
+        while (analogRead(MODE) > 500);
+        currentState = STATE_Z1;
+        lcd.clear();
+      }
+      break;
+
+    case STATE_Z1:
+      Serial.println("STATE_Z1");
+      positions[1] = ajustValue(STATE_Z1);
+      Serial.println(positions[1]);
+      if (analogRead(MODE) > 500) {
+        while (analogRead(MODE) > 500);
+        currentState = STATE_X;
+        lcd.clear();
+      }
+      break;
+    case STATE_X:
+      Serial.println("STATE_X");
+      positions[0] = ajustValue(STATE_X);
+      if (analogRead(MODE) > 500) {
+        while (analogRead(MODE) > 500);
+        currentState = STATE_Z2;
+        lcd.clear();
+      }
+      break;
+    case STATE_Z2:
+      Serial.println("STATE_Z2");
+      positions[2] = ajustValue(STATE_Z2);
+      if (analogRead(MODE) > 500) {
+        while (analogRead(MODE) > 500);
+        currentState = STATE_WAITSTART;
+        lcd.clear();
+      }
+      break;
+
+    case STATE_SPEED:
+      Serial.println("STATE_SPEED");
+      PercentSpeed = ajustValue(STATE_SPEED);
       if (analogRead(MODE) > 500) {
         while (analogRead(MODE) > 500);
         currentState = STATE_WAITSTART;
@@ -305,19 +307,13 @@ void moveOne(char m) {
 void updateLCD() {
   switch (currentState)
   {
+    case STATE_STARTUP:
     case STATE_HOMEX:
     case STATE_HOMEZ1:
     case STATE_HOMEZ2:
       setLCD();
       break;
-    case STATE_STARTUP:
-    case STATE_Z1:
-    case STATE_Z2:
-    case STATE_X:
-    case STATE_SPEED:
-    case STATE_WAITSTART:
-    case STATE_WAITMOVE:
-    case STATE_MOVING:
+    default:
       modeLCD();
       break;
   }
@@ -328,12 +324,19 @@ void modeLCD() {
   char f2 = ':';
   char f3 = ':';
   char f4 = ':';
-  char s_ = ' ';
+  String s_ = "   ";
 
   switch (currentState)
   {
     case STATE_WAITSTART:
-      s_ = 'S';
+      s_ = "WAI";
+      break;
+    case STATE_WAITMOVE:
+    case STATE_MOVING:
+      s_ = "RUN";
+      break;
+    default:
+      s_ = "SET";
       break;
   }
 
@@ -360,21 +363,23 @@ void modeLCD() {
   lcd.print(f1);
   lcd.print(positions[1], 0);
   lcd.print("  ");
-  lcd.setCursor(7, 0);
-  lcd.print("Z2");
-  lcd.print(f2);
-  lcd.print(positions[2], 0);
 
-  lcd.setCursor(0, 1);
+  lcd.setCursor(7, 0);
   lcd.print("X");
   lcd.print(f3);
   lcd.print(positions[0], 0);
   lcd.print("  ");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Z2");
+  lcd.print(f2);
+
+  lcd.print(positions[2], 0);
   lcd.setCursor(7, 1);
   lcd.print("N:");
   lcd.print(N);
 
-  lcd.setCursor(15, 1);
+  lcd.setCursor(13, 1);
   lcd.print(s_);
 }
 
@@ -402,17 +407,18 @@ void setLCD() {
   lcd.print(f1);
   lcd.print(setPositions[1], 0);
   lcd.print("  ");
-  lcd.setCursor(7, 0);
-  lcd.print("Z2");
-  lcd.print(f2);
-  lcd.print(setPositions[2], 0);
 
-  lcd.setCursor(0, 1);
+  lcd.setCursor(7, 0);
   lcd.print("X");
   lcd.print(f3);
   lcd.print(setPositions[0], 0);
   lcd.print("  ");
 
+  lcd.setCursor(0, 1);
+  lcd.print("Z2");
+  lcd.print(f2);
+  lcd.print(setPositions[2], 0);
+
   lcd.setCursor(13, 1);
-  lcd.print("SET");
+  lcd.print("HOM");
 }
