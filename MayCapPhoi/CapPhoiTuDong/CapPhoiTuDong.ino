@@ -14,11 +14,12 @@
 AccelStepper stepper1(AccelStepper::DRIVER, PUL1_PIN, DIR1_PIN);
 AccelStepper stepper2(AccelStepper::DRIVER, PUL2_PIN, DIR2_PIN);
 
-#define CONT A3
+#define RUN A3 //start in home
 #define DOWN A0
 #define MODE A1
 #define UP A2
-#define SpnEn 12
+#define RELAY 12
+#define CONT 13 // on/off one circle
 
 
 #define STATE_STARTUP 0
@@ -64,10 +65,11 @@ void setup() {
   pinMode(PUL2_PIN, OUTPUT);
   pinMode(DIR2_PIN, OUTPUT);
   pinMode(EN1_PIN, OUTPUT);
-  pinMode(SpnEn, OUTPUT);
+  pinMode(RELAY, OUTPUT);
+  pinMode(CONT, INPUT);
 
   digitalWrite(EN1_PIN, LOW);
-  digitalWrite(SpnEn, LOW);
+  digitalWrite(RELAY, LOW);
   //
   lcd.init();
   lcd.backlight();
@@ -86,7 +88,7 @@ void loop() {
   //  Serial.print(" ");
   //  Serial.print(positions[2]);
   //  Serial.print(" ");
-  //  Serial.println(PercentSpeed);
+  Serial.println(digitalRead(CONT));
   updateLCD();
   updateState(currentState);
 }
@@ -105,8 +107,8 @@ void updateState(byte aState) {
     case STATE_HOMEZ1:
       Serial.println("STATE_HOMEZ1");
       setPositions[1] = ajustValue(STATE_HOMEZ1);
-      if (analogRead(CONT) > 500) {
-        while (analogRead(CONT) > 500);
+      if (analogRead(RUN) > 500) {
+        while (analogRead(RUN) > 500);
         moveOne('1');
       }
       if (analogRead(MODE) > 500) {
@@ -118,8 +120,8 @@ void updateState(byte aState) {
     case STATE_HOMEX:
       Serial.println("STATE_HOMEX");
       setPositions[0] = ajustValue(STATE_HOMEX);
-      if (analogRead(CONT) > 500) {
-        while (analogRead(CONT) > 500);
+      if (analogRead(RUN) > 500) {
+        while (analogRead(RUN) > 500);
         moveOne('0');
       }
       if (analogRead(MODE) > 500) {
@@ -132,8 +134,8 @@ void updateState(byte aState) {
     case STATE_HOMEZ2:
       Serial.println("STATE_HOMEZ2");
       setPositions[2] = ajustValue(STATE_HOMEZ2);
-      if (analogRead(CONT) > 500) {
-        while (analogRead(CONT) > 500);
+      if (analogRead(RUN) > 500) {
+        while (analogRead(RUN) > 500);
         moveOne('2');
       }
       if (analogRead(MODE) > 500) {
@@ -184,8 +186,8 @@ void updateState(byte aState) {
 
     case STATE_WAITSTART:
       Serial.println("STATE_WAITSTART");
-      if (analogRead(UP) > 500) {
-        while (analogRead(UP) > 500);
+      if (analogRead(RUN) > 500) {
+        while (analogRead(RUN) > 500);
         currentState = STATE_WAITMOVE;
         lcd.clear();
       }
@@ -197,7 +199,7 @@ void updateState(byte aState) {
       break;
     case STATE_WAITMOVE:
       Serial.println("STATE_WAITMOVE");
-      if (analogRead(CONT) > 500) {
+      if (digitalRead(CONT) == 1) {
         currentState = STATE_MOVING;
         lcd.clear();
       } else {
@@ -263,7 +265,7 @@ void moving() {
   stepper2.setMaxSpeed(maxSpeeds[1]);
   stepper2.setAcceleration(acceleration[1]);
 
-  digitalWrite(SpnEn, LOW);
+  digitalWrite(RELAY, LOW);
   stepper1.runToNewPosition(0);
   stepper2.runToNewPosition(0);
 
@@ -272,7 +274,7 @@ void moving() {
 
   stepper2.runToNewPosition(steps[1]);
   delay(200);
-  digitalWrite(SpnEn, HIGH);
+  digitalWrite(RELAY, HIGH);
   delay(1000);
 
   stepper2.runToNewPosition(0);
@@ -283,7 +285,7 @@ void moving() {
 
   stepper2.runToNewPosition(steps[2]);
   delay(200);
-  digitalWrite(SpnEn, LOW);
+  digitalWrite(RELAY, LOW);
   delay(1000);
 
   stepper2.runToNewPosition(0);
