@@ -7,7 +7,7 @@
 #define PUL1_PIN 2
 #define DIR1_PIN 5
 #define EN1_PIN 8
-//driver for the axis 2 - Y
+//driver for the axis 2 - Z
 #define PUL2_PIN 4
 #define DIR2_PIN 7
 
@@ -39,15 +39,15 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // or 0x3F
 byte currentState = STATE_STARTUP; //STATE_WAITSTART;//
 
 
-int microStep[2] = {4, 1};
-float angleStep[2] = {1.8, 1.8};
-float disPerRound[2] = {40, 8};
-float positions[3] = {503, 140, 200}; //11 - 1 - 2
+int microStep[2] = {4, 1}; //vi buoc
+float angleStep[2] = {1.8, 1.8}; // do motor
+float disPerRound[2] = {40, 8}; // 
+float positions[3] = {440, 140, 200}; 
 long steps[3] = {0, 0, 0};
 long maxSpeeds[2] = {50000, 2000};
 long acceleration[2] = {40000, 1500};
 
-float setPositions[3] = {500,  130, 190};
+float setPositions[3] = {430,  130, 190};
 long setSteps[3] = {0, 0, 0};
 
 float PercentSpeed = 10;
