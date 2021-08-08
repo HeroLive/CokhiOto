@@ -4,11 +4,12 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // or 0x3F
 
 #define STATE_STARTUP 0
 #define STATE_SPEED 1
-#define STATE_MOVEX 2
-#define STATE_LENGTH 3
-#define STATE_DELAY 4
-#define STATE_WAITSTART 5
-#define STATE_MOVING 6
+#define STATE_SETX 2
+#define STATE_MOVEX 3
+#define STATE_LENGTH 4
+#define STATE_DELAY 5
+#define STATE_WAITSTART 6
+#define STATE_MOVING 7
 byte currentState = STATE_STARTUP;
 
 // Define a stepper and the pins it will use
@@ -85,27 +86,38 @@ void updateState(byte aState) {
     case STATE_SPEED:
       Serial.println("STATE_SPEED");
       settingValue(currentState);
-      Serial.println(_speed);
+      maxSpeeds = round(1000000 / (_speed * stepsPerUnit));
       setLCD();
       if (digitalRead(MODE) == 0) {
-        currentState = STATE_MOVEX;
+        currentState = STATE_SETX;
         while (digitalRead(MODE) == 0);
-//        lcd.clear();
-        Serial.println("STATE_MOVEX");
+        lcd.clear();
       }
       break;
-    case STATE_MOVEX:
+    case STATE_SETX:
+      Serial.println("STATE_SETX");
       settingValue(currentState);
       setLCD();
-      motorRun(PUL1_PIN, DIR1_PIN);
+      if (digitalRead(RUN) == 0) {
+        currentState = STATE_MOVEX;
+        target = _posX * stepsPerUnit;
+        Serial.println("STATE_MOVEX");
+      }
       if (digitalRead(MODE) == 0) {
         currentState = STATE_LENGTH;
         while (digitalRead(MODE) == 0);
         lcd.clear();
-        Serial.println("STATE_LENGTH");
+      }
+      break;
+    case STATE_MOVEX:
+      motorRun(PUL1_PIN, DIR1_PIN);
+      if (positions == target) {
+        currentState = STATE_SETX;
+        lcd.clear();
       }
       break;
     case STATE_LENGTH:
+      Serial.println("STATE_LENGTH");
       settingValue(currentState);
       setLCD();
       if (digitalRead(MODE) == 0) {
@@ -117,7 +129,6 @@ void updateState(byte aState) {
     case STATE_DELAY:
       Serial.println("STATE_DELAY");
       settingValue(currentState);
-      Serial.println(_delay);
       setLCD();
       if (digitalRead(MODE) == 0) {
         currentState = STATE_WAITSTART;
@@ -129,11 +140,11 @@ void updateState(byte aState) {
     case STATE_WAITSTART:
       settingValue(currentState);
       _posX = round(positions / stepsPerUnit);
+      maxSpeeds = round(1000000 / (_speed * stepsPerUnit));
       setLCD();
       if (digitalRead(RUN) == 0) {
         currentState = STATE_MOVING;
         while (digitalRead(RUN) == 0);
-        //        lcd.clear();
         target = 0;
         runDone = false;
         Serial.println("STATE_MOVING");
@@ -144,7 +155,6 @@ void updateState(byte aState) {
       }
       break;
     case STATE_MOVING:
-      //      setLCD();
       motorRun(PUL1_PIN, DIR1_PIN);
       if (runDone == false) {
         if (positions == 0) {
@@ -177,7 +187,7 @@ void setLCD() {
       case STATE_SPEED:
         f1 = ' ';
         break;
-      case STATE_MOVEX:
+      case STATE_SETX:
         f2 = ' ';
         break;
       case STATE_LENGTH:
@@ -260,11 +270,9 @@ float settingValue(byte mode) {
       case STATE_MOVING:
         _speed = _speed + count;
         _speed = _speed > 0 ? _speed : 1;
-        maxSpeeds = round(1000000 / (_speed * stepsPerUnit));
         break;
-      case STATE_MOVEX:
+      case STATE_SETX:
         _posX = _posX + count;
-        target = _posX * stepsPerUnit;
         break;
       case STATE_LENGTH:
         _length = _length + count;
