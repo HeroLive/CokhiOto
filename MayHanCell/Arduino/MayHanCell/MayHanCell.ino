@@ -4,10 +4,11 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // or 0x3F
 
 #define STATE_STARTUP 0
 #define STATE_SPEED 1
-#define STATE_LENGTH 2
-#define STATE_DELAY 3
-#define STATE_WAITSTART 4
-#define STATE_MOVING 5
+#define STATE_MOVEX 2
+#define STATE_LENGTH 3
+#define STATE_DELAY 4
+#define STATE_WAITSTART 5
+#define STATE_MOVING 6
 byte currentState = STATE_STARTUP;
 
 // Define a stepper and the pins it will use
@@ -27,17 +28,22 @@ long encoderPos = 0; //this variable stores our current value of encoder positio
 long oldEncPos = 0; //stores the last encoder position value so we can compare to the current reading and see if it has changed (so we know when to print to the serial monitor)
 volatile byte reading = 0; //somewhere to store the direct values we read from our interrupt pins before checking to see if we have moved a whole detent
 //---------
-boolean DIR1 = LOW;
-long microStep = 1;
-long fullStep = 200;
-long maxSpeeds = 400;
-long positions = 0;
-long target = 0;
-//---------
-float _speed = 0;
-float _length = 0;
-float _delay = 0;
 
+float microStep = 4;
+float angleStep = 1.8;
+float disPerRound = 0.125; // round/mm
+float stepsPerUnit = disPerRound * 360.0 * microStep / angleStep;
+
+boolean DIR1 = LOW;
+float maxSpeeds = 400;
+float positions = 0;
+float target = 0;
+boolean runDone = false;
+//---------
+float _speed = 5;
+float _posX = 0;
+float _length = 40;
+float _delay = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -82,6 +88,17 @@ void updateState(byte aState) {
       Serial.println(_speed);
       setLCD();
       if (digitalRead(MODE) == 0) {
+        currentState = STATE_MOVEX;
+        while (digitalRead(MODE) == 0);
+//        lcd.clear();
+        Serial.println("STATE_MOVEX");
+      }
+      break;
+    case STATE_MOVEX:
+      settingValue(currentState);
+      setLCD();
+      motorRun(PUL1_PIN, DIR1_PIN);
+      if (digitalRead(MODE) == 0) {
         currentState = STATE_LENGTH;
         while (digitalRead(MODE) == 0);
         lcd.clear();
@@ -90,11 +107,7 @@ void updateState(byte aState) {
       break;
     case STATE_LENGTH:
       settingValue(currentState);
-      target = _length * 800;
-      if (positions == target) {
-        setLCD();
-      }
-      motorRun(PUL1_PIN, DIR1_PIN);
+      setLCD();
       if (digitalRead(MODE) == 0) {
         currentState = STATE_DELAY;
         while (digitalRead(MODE) == 0);
@@ -110,16 +123,20 @@ void updateState(byte aState) {
         currentState = STATE_WAITSTART;
         while (digitalRead(MODE) == 0);
         lcd.clear();
+        Serial.println("STATE_WAITSTART");
       }
       break;
     case STATE_WAITSTART:
-      Serial.println("STATE_WAITSTART");
       settingValue(currentState);
+      _posX = round(positions / stepsPerUnit);
       setLCD();
       if (digitalRead(RUN) == 0) {
         currentState = STATE_MOVING;
         while (digitalRead(RUN) == 0);
-        lcd.clear();
+        //        lcd.clear();
+        target = 0;
+        runDone = false;
+        Serial.println("STATE_MOVING");
       } else if (digitalRead(MODE) == 0) {
         currentState = STATE_STARTUP;
         while (digitalRead(MODE) == 0);
@@ -127,47 +144,75 @@ void updateState(byte aState) {
       }
       break;
     case STATE_MOVING:
-      Serial.println("STATE_MOVING");
-      setLCD();
-      currentState = STATE_WAITSTART;
+      //      setLCD();
+      motorRun(PUL1_PIN, DIR1_PIN);
+      if (runDone == false) {
+        if (positions == 0) {
+          target = _length * stepsPerUnit;
+          runDone = true;
+          delay(200);
+        }
+      } else {
+        if (positions == 0) {
+          currentState = STATE_WAITSTART;
+          runDone = false;
+          Serial.println("STATE_WAITSTART");
+        } else if (positions == _length * stepsPerUnit) {
+          delay(_delay * 1000);
+          target = 0;
+        }
+      }
       break;
   }
 }
 
 void setLCD() {
   char f1 = 'T';
-  char f2 = 'H';
-  char f3 = 'T';
+  char f2 = 'V';
+  char f3 = 'H';
+  char f4 = 'T';
   if ((millis() * 5 / 1000) % 2 == 0) {
     switch (currentState)
     {
       case STATE_SPEED:
         f1 = ' ';
         break;
-      case STATE_LENGTH:
+      case STATE_MOVEX:
         f2 = ' ';
         break;
-      case STATE_DELAY:
+      case STATE_LENGTH:
         f3 = ' ';
+        break;
+      case STATE_DELAY:
+        f4 = ' ';
         break;
     }
   }
   lcd.setCursor(0, 0);
   lcd.print(f1);
-  lcd.print("ocDo");
-  lcd.setCursor(6, 0);
+  lcd.print("Do");
+  lcd.setCursor(4, 0);
   lcd.print(f2);
-  lcd.print("Trinh");
-  lcd.setCursor(13, 0);
+  lcd.print("Tr");
+  lcd.setCursor(8, 0);
   lcd.print(f3);
+  lcd.print("Tr");
+  lcd.setCursor(12, 0);
+  lcd.print(f4);
   lcd.print("re");
 
   lcd.setCursor(0, 1);
-  lcd.print(_speed, 1);
-  lcd.setCursor(6, 1);
+  lcd.print(_speed, 0);
+  lcdSpace(4 - numDigit(_speed));
+  lcd.setCursor(4, 1);
+  lcd.print(_posX, 0);
+  lcdSpace(4 - numDigit(_posX));
+  lcd.setCursor(8, 1);
   lcd.print(_length, 0);
-  lcd.setCursor(13, 1);
+  lcdSpace(4 - numDigit(_length));
+  lcd.setCursor(12, 1);
   lcd.print(_delay, 1);
+  lcd.print(" ");
 }
 //Menu
 
@@ -208,23 +253,43 @@ float settingValue(byte mode) {
       count--;
     }
     oldEncPos = encoderPos;
+    switch (mode)
+    {
+      case STATE_SPEED:
+      case STATE_WAITSTART:
+      case STATE_MOVING:
+        _speed = _speed + count;
+        _speed = _speed > 0 ? _speed : 1;
+        maxSpeeds = round(1000000 / (_speed * stepsPerUnit));
+        break;
+      case STATE_MOVEX:
+        _posX = _posX + count;
+        target = _posX * stepsPerUnit;
+        break;
+      case STATE_LENGTH:
+        _length = _length + count;
+        _length = _length > 0 ? _length : 0;
+        break;
+      case STATE_DELAY:
+        _delay = _delay + 0.1 * count;
+        _delay = _delay > 0 ? _delay : 0;
+        break;
+    }
   }
-  switch (mode)
-  {
-    case STATE_SPEED:
-    case STATE_WAITSTART:
-    case STATE_MOVING:
-      _speed = _speed + 0.1 * count;
-      _speed = _speed > 0 ? _speed : 0;
-      break;
-    case STATE_LENGTH:
-      _length = _length + count;
-      _length = _length > 0 ? _length : 0;
-      break;
-    case STATE_DELAY:
-      _delay = _delay + 0.1 * count;
-      _delay = _delay > 0 ? _delay : 0;
-      break;
+}
+//------------------------
+int numDigit(float n) {
+  int count = 0;
+  long num = (long)n;
+  String str = "";     // empty string
+  str.concat(num);
+  count = str.length();
+  return count;
+}
+//------------------------
+void lcdSpace(int n) {
+  for (int i = 0; i < n; i++) {
+    lcd.print(" ");
   }
 }
 //------------------------
@@ -238,8 +303,8 @@ void motorRun(int pul, int dir) {
       positions--;
     }
     digitalWrite(pul, HIGH);
-    delayMicroseconds(maxSpeeds);
+    delayMicroseconds(0.4 * maxSpeeds);
     digitalWrite(pul, LOW);
-    delayMicroseconds(maxSpeeds);
+    delayMicroseconds(0.6 * maxSpeeds);
   }
 }
