@@ -17,6 +17,7 @@ int PUL1_PIN = 11;
 int DIR1_PIN = 12;
 int EN_PIN = 13;
 int RUN = 10;
+int RELAY = 8;
 
 //encoder
 static int pinA = 2; // Our first hardware interrupt pin is digital pin 2
@@ -36,6 +37,7 @@ float disPerRound = 0.125; // round/mm
 float stepsPerUnit = disPerRound * 360.0 * microStep / angleStep;
 
 boolean DIR1 = LOW;
+boolean _RELAY = LOW;
 float maxSpeeds = 400;
 float positions = 0;
 float target = 0;
@@ -59,6 +61,9 @@ void setup() {
   pinMode(EN_PIN, OUTPUT);
   digitalWrite(EN_PIN, LOW);
   //
+  pinMode(RELAY, OUTPUT);
+  digitalWrite(RELAY, _RELAY);
+  //
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0); //frint from column 3, row 0
@@ -79,6 +84,7 @@ void updateState(byte aState) {
   {
     case STATE_STARTUP:
       Serial.println("STATE_STARTUP");
+      digitalWrite(RELAY, _RELAY);
       setLCD();
       currentState = STATE_SPEED;
       lcd.clear();
@@ -168,7 +174,9 @@ void updateState(byte aState) {
           runDone = false;
           Serial.println("STATE_WAITSTART");
         } else if (positions == _length * stepsPerUnit) {
+          digitalWrite(RELAY, !_RELAY);
           delay(_delay * 1000);
+          digitalWrite(RELAY, _RELAY);
           target = 0;
         }
       }
