@@ -16,7 +16,7 @@ byte currentState = STATE_STARTUP;
 int PUL1_PIN = 11;
 int DIR1_PIN = 12;
 int EN_PIN = 13;
-int RUN = 10;
+int RUN = 10; // button
 int RELAY = 8;
 
 //encoder
@@ -33,20 +33,20 @@ volatile byte reading = 0; //somewhere to store the direct values we read from o
 
 float microStep = 4;
 float angleStep = 1.8;
-float disPerRound = 0.125; // round/mm
+float disPerRound = 0.025; // round/mm, Exp: Vitme T8 --> 1/8=0.125
 float stepsPerUnit = disPerRound * 360.0 * microStep / angleStep;
 
-boolean DIR1 = LOW;
-boolean _RELAY = LOW;
-float maxSpeeds = 400;
+boolean DIR1 = LOW; // default direction
+boolean _RELAY = LOW; // low level relay
+float maxSpeeds = 400; // convert from mm/s to time delay
 float positions = 0;
 float target = 0;
 boolean runDone = false;
 //---------
-float _speed = 5;
-float _posX = 0;
-float _length = 40;
-float _delay = 0;
+float _speed = 5; // mm/s
+float _posX = 0; // mm
+float _length = 40; // mm
+float _delay = 0; // s
 
 void setup() {
   // put your setup code here, to run once:
