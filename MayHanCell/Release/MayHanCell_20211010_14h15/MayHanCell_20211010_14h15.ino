@@ -45,14 +45,13 @@ float positions = 0;
 float target = 0;
 boolean runDone = false;
 //---------
-float _speed = 200; // mm/s
+float _speed = 5; // mm/s
 float _posX = 0; // mm
 float _length = 40; // mm
-float _delay1 = 160; // s
-float _delay2 = 150; // s
+float _delay1 = 0; // s
+float _delay2 = 0; // s
 
 //----------
-int isData = 143;
 
 void setup() {
   // put your setup code here, to run once:
@@ -75,7 +74,7 @@ void setup() {
   lcd.setCursor(0, 0); //frint from column 3, row 0
   lcd.print("** Hero Live **");
   lcd.setCursor(0, 1);
-  lcd.print("Stepper Control");  
+  lcd.print("Stepper Control");
   readData();
   delay(3000);
   lcd.clear();
@@ -371,14 +370,10 @@ void motorRun(int pul, int dir) {
 //--------------------------
 void readData() {
   Serial.println("Read Data from EEPROM");
-  if(EEPROM.read(0)!= 143){
-    Serial.println("No Data from EEPROM, pls setting data");
-    return;
-  }
-  _speed = EEPROMReadlong(1);
-  _length = EEPROMReadlong(5);
-  _delay1 = EEPROMReadlong(9);
-  _delay2 = EEPROMReadlong(13);
+  _speed = EEPROM.read(0);
+  _length = EEPROM.read(4);
+  _delay1 = EEPROM.read(8);
+  _delay2 = EEPROM.read(12);
   Serial.print(_speed);
   Serial.print(" ");
   Serial.print(_length);
@@ -388,40 +383,9 @@ void readData() {
   Serial.println(_delay2);
 }
 void updateData() {
-  EEPROM.write(0,143);
-  EEPROMWritelong(1,_speed);
-  EEPROMWritelong(5,_length);
-  EEPROMWritelong(9,_delay1);
-  EEPROMWritelong(13,_delay2);
+  EEPROM.update(0, _speed);
+  EEPROM.update(4, _length);
+  EEPROM.update(8, _delay1);
+  EEPROM.update(12, _delay2);
   Serial.println("Done update Data on EEPROM");
-}
-
-void EEPROMWritelong(int address, long value)
-{
-  //Decomposition from a long to 4 bytes by using bitshift.
-  //One = Most significant -> Four = Least significant byte
-  byte four = (value & 0xFF);
-  byte three = ((value >> 8) & 0xFF);
-  byte two = ((value >> 16) & 0xFF);
-  byte one = ((value >> 24) & 0xFF);
-
-  //Write the 4 bytes into the eeprom memory.
-  EEPROM.write(address, four);
-  EEPROM.write(address + 1, three);
-  EEPROM.write(address + 2, two);
-  EEPROM.write(address + 3, one);
-}
-
-//This function will return a 4 byte (32bit) long from the eeprom
-//at the specified address to adress + 3.
-long EEPROMReadlong(long address)
-{
-  //Read the 4 bytes from the eeprom memory.
-  long four = EEPROM.read(address);
-  long three = EEPROM.read(address + 1);
-  long two = EEPROM.read(address + 2);
-  long one = EEPROM.read(address + 3);
-
-  //Return the recomposed long by using bitshift.
-  return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
 }
