@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <EEPROM.h>
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2); // or 0x3F
 
@@ -74,6 +75,7 @@ void setup() {
   lcd.print("** Hero Live **");
   lcd.setCursor(0, 1);
   lcd.print("Stepper Control");
+  readData();
   delay(3000);
   lcd.clear();
 }
@@ -95,7 +97,7 @@ void updateState(byte aState) {
       lcd.clear();
       break;
     case STATE_SETX:
-//      Serial.println("STATE_SETX");
+      //      Serial.println("STATE_SETX");
       settingValue(currentState);
       setLCD();
       maxSpeeds = round(1000000 / (_speed * stepsPerUnit));
@@ -158,6 +160,7 @@ void updateState(byte aState) {
         while (digitalRead(MODE) == 0);
         lcd.clear();
         Serial.println("STATE_WAITSTART");
+        updateData();
       }
       break;
     case STATE_WAITSTART:
@@ -257,10 +260,10 @@ void setLCD() {
   lcdSpace(4 - numDigit(_length));
   lcd.setCursor(8, 1);
   lcd.print(_delay1, 0);
-  //  lcdSpace(4 - numDigit(_delay1));
+  lcdSpace(4 - numDigit(_delay1));
   lcd.setCursor(12, 1);
   lcd.print(_delay2, 0);
-  lcd.print(" ");
+  lcdSpace(4 - numDigit(_delay2));
 }
 //Menu
 
@@ -362,4 +365,27 @@ void motorRun(int pul, int dir) {
     digitalWrite(pul, LOW);
     delayMicroseconds(0.6 * maxSpeeds);
   }
+}
+
+//--------------------------
+void readData() {
+  Serial.println("Read Data from EEPROM");
+  _speed = EEPROM.read(0);
+  _length = EEPROM.read(4);
+  _delay1 = EEPROM.read(8);
+  _delay2 = EEPROM.read(12);
+  Serial.print(_speed);
+  Serial.print(" ");
+  Serial.print(_length);
+  Serial.print(" ");
+  Serial.print(_delay1);
+  Serial.print(" ");
+  Serial.println(_delay2);
+}
+void updateData() {
+  EEPROM.update(0, _speed);
+  EEPROM.update(4, _length);
+  EEPROM.update(8, _delay1);
+  EEPROM.update(12, _delay2);
+  Serial.println("Done update Data on EEPROM");
 }
