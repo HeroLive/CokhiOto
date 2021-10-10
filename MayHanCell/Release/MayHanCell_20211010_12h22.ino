@@ -51,6 +51,7 @@ float _delay1 = 0; // s
 float _delay2 = 0; // s
 
 //----------
+long t_wait = millis();
 
 void setup() {
   // put your setup code here, to run once:
@@ -95,12 +96,13 @@ void updateState(byte aState) {
       lcd.clear();
       break;
     case STATE_SETX:
-//      Serial.println("STATE_SETX");
+      Serial.println("STATE_SETX");
       settingValue(currentState);
       setLCD();
-      maxSpeeds = round(1000000 / (_speed * stepsPerUnit));
-      currentState = STATE_MOVEX;
-      //        Serial.println("STATE_MOVEX");
+      if (millis() - t_wait > 1000) {
+        currentState = STATE_MOVEX;
+        Serial.println("STATE_MOVEX");
+      }
       target = _posX * stepsPerUnit;
       if (digitalRead(MODE) == 0) {
         currentState = STATE_SPEED;
@@ -114,6 +116,7 @@ void updateState(byte aState) {
       motorRun(PUL1_PIN, DIR1_PIN);
       if (positions == target) {
         currentState = STATE_SETX;
+        t_wait = millis();
         //        lcd.clear();
       }
       break;
@@ -175,6 +178,7 @@ void updateState(byte aState) {
         currentState = STATE_SETX;
         while (digitalRead(MODE) == 0);
         lcd.clear();
+        t_wait = millis();
       }
       break;
     case STATE_MOVING:

@@ -50,8 +50,6 @@ float _length = 40; // mm
 float _delay1 = 0; // s
 float _delay2 = 0; // s
 
-//----------
-
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -95,12 +93,10 @@ void updateState(byte aState) {
       lcd.clear();
       break;
     case STATE_SETX:
-//      Serial.println("STATE_SETX");
+      Serial.println("STATE_SETX");
       settingValue(currentState);
       setLCD();
-      maxSpeeds = round(1000000 / (_speed * stepsPerUnit));
       currentState = STATE_MOVEX;
-      //        Serial.println("STATE_MOVEX");
       target = _posX * stepsPerUnit;
       if (digitalRead(MODE) == 0) {
         currentState = STATE_SPEED;
