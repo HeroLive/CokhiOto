@@ -16,8 +16,8 @@ int curPot = 0;
 int lastPot = 0;
 int stepsPerUnit = 1600;
 int rpm = 0;
-int rmp_max = 235; //so thu 4 de chinh toc do toi da
-int rmp_min = 3;
+int rpm_max = 235; //so thu 4 de chinh toc do toi da
+int rpm_min = 3;
 float curSpeed = 0;
 float period = 0;
 
@@ -39,7 +39,7 @@ void loop() {
   curPot = analogRead(pinPot);
   if (abs(curPot - lastPot) > 10) {
     lastPot = curPot;
-    rpm = map(curPot, 0, 1023, 0, rmp_max);
+    rpm = map(curPot, 0, 1023, 0, rpm_max);
     curSpeed = rpm / 60.0 * stepsPerUnit;
     period = 0.5 / curSpeed * 1000000 - 60.0;
 //    Serial.print("curPot:");
@@ -75,7 +75,7 @@ void loop() {
       lastEndXB = HIGH;
     }
   }
-  if (rpm > rmp_min) {
+  if (rpm > rpm_min) {
     digitalWrite(stepPinX, HIGH);
     delayMicroseconds(period);
     digitalWrite(stepPinX, LOW);
