@@ -6,15 +6,18 @@ int endPinXA = 8;
 int endPinXB = 9;
 int pinPot = A7;
 
-bool dirX = LOW;
-bool startDirX = LOW;
+
+bool startDirX = HIGH;
+bool dirX = startDirX;
 bool lastEndXA = HIGH;
 bool lastEndXB = HIGH;
 
 int curPot = 0;
 int lastPot = 0;
-int stepsPerUnit = 800;
+int stepsPerUnit = 1600;
 int rpm = 0;
+int rmp_max = 235; //so thu 4 de chinh toc do toi da
+int rmp_min = 3;
 float curSpeed = 0;
 float period = 0;
 
@@ -36,9 +39,9 @@ void loop() {
   curPot = analogRead(pinPot);
   if (abs(curPot - lastPot) > 10) {
     lastPot = curPot;
-    rpm = map(curPot, 0, 1023, 0, 250);
+    rpm = map(curPot, 0, 1023, 0, rmp_max);
     curSpeed = rpm / 60.0 * stepsPerUnit;
-    period = 1.0 / curSpeed * 1000000;
+    period = 0.5 / curSpeed * 1000000 - 60.0;
 //    Serial.print("curPot:");
 //    Serial.print(curPot);
 //    Serial.print(" rpm:");
@@ -50,26 +53,33 @@ void loop() {
   if (digitalRead(endPinXA) != lastEndXA) {
     if (digitalRead(endPinXA) == 0) {
       lastEndXA = LOW;
+      if (dirX == startDirX) {
+        delay(1000);
+      }
       dirX = !startDirX;
       digitalWrite(dirPinX, dirX);
+
     } else {
-      lastEndXA = 1;
+      lastEndXA = HIGH;
     }
   }
   if (digitalRead(endPinXB) != lastEndXB) {
     if (digitalRead(endPinXB) == 0) {
       lastEndXB = LOW;
+      if (dirX == (!startDirX)) {
+        delay(1000);
+      }
       dirX = startDirX;
       digitalWrite(dirPinX, dirX);
     } else {
-      lastEndXB = 1;
+      lastEndXB = HIGH;
     }
   }
-  if (rpm > 1) {
+  if (rpm > rmp_min) {
     digitalWrite(stepPinX, HIGH);
-    delayMicroseconds(0.4 * period);
+    delayMicroseconds(period);
     digitalWrite(stepPinX, LOW);
-    delayMicroseconds(0.5 * period);
+    delayMicroseconds(period);
   }
 
 }
