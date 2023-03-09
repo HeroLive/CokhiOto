@@ -1,0 +1,227 @@
+#include <math.h>
+#include "StepperMotor.h"
+
+#include <Servo.h>
+// Create a new servo object:
+Servo myservo;
+
+//driver for the axis 1 - X
+#define PUL1_PIN 2
+#define DIR1_PIN 5
+//driver for the axis 2 - Y
+#define PUL2_PIN 3
+#define DIR2_PIN 6
+//enable pin for the axis 1,2
+#define EN_PIN 8
+
+#define X0_PIN 9      //map to X limit
+#define Y0_PIN 10     //map to Y limit
+#define Y2_PIN 11     // map to Z limit   
+#define Servo_PIN 4  // map to step Z
+#define S_PIN 12      //map to SpnEn
+#define Pump_PIN A3   //map to CoolEn
+
+#define STATE_STARTUP 0
+#define STATE_HOME_X 2
+#define STATE_HOME_Y 3
+#define STATE_WAIT_START 4
+#define STATE_MOVING 5
+#define STATE_MOVE_Y2 6
+
+byte currentState = STATE_STARTUP;
+
+StepperMotor stepperX(PUL1_PIN, DIR1_PIN, EN_PIN);
+
+double calStepPerUnit(double angleStep, int microStep, double disPerRound) {
+  double stepsPerUnit = (1.0 / disPerRound) * 360.0 * microStep / angleStep;  //steps/round or steps/mm ...
+  return stepsPerUnit;
+}
+
+//unit is mm
+double X0 = 0;
+double X1 = 0.5;
+double X2 = 0.75;
+double Y0 = 0;
+double Y1 = 30;
+double Y2 = 200;
+
+//
+double microStepX = 16;
+double angleStepX = 1.8;
+double microStepY = 16;
+double angleStepY = 1.8;
+double disPerRoundX = 1;
+double disPerRoundY = 40; //20x2=40mm
+bool startDirX = HIGH;
+bool startDirY = HIGH;
+double targetX = 0;
+double targetY = 0;
+double speedX = 0.25;   //set 2 round/s
+double speedY = 100.0;  //set 100 mm/s
+
+double stepsPerUnitX = calStepPerUnit(angleStepX, microStepX, disPerRoundX);
+double stepsPerUnitY = calStepPerUnit(angleStepY, microStepY, disPerRoundY);
+
+//
+double positonY = 0;
+bool Y2_trigger = false;
+
+void setup() {
+  Serial.begin(9600);
+  delay(100);
+
+  pinMode(PUL1_PIN, OUTPUT);
+  pinMode(DIR1_PIN, OUTPUT);
+  pinMode(PUL2_PIN, OUTPUT);
+  pinMode(DIR2_PIN, OUTPUT);
+  pinMode(EN_PIN, OUTPUT);
+  pinMode(Pump_PIN, OUTPUT);
+
+  pinMode(X0_PIN, INPUT_PULLUP);
+  pinMode(Y0_PIN, INPUT_PULLUP);
+  pinMode(Y2_PIN, INPUT_PULLUP);
+  pinMode(S_PIN, INPUT_PULLUP);
+
+
+  stepperX.setStepsPerUnit(stepsPerUnitX);
+  stepperX.setSpeed(speedX);
+  stepperX.setStartDirection(LOW);
+
+  stepperX.setEnable(LOW);
+  
+  myservo.attach(Servo_PIN);
+  pump("OFF");
+  servo(0);
+  delay(3000);
+}
+
+void loop() {
+  updateState(currentState);
+  // Serial.println(digitalRead(Y2_PIN));
+}
+
+void updateState(byte aState) {
+  // do state change
+  switch (aState) {
+    case STATE_STARTUP:
+      Serial.println("STATE_STARTUP");
+      currentState = STATE_WAIT_START;
+      Serial.println("STATE_WAIT_START");
+      break;
+    case STATE_WAIT_START:
+      pump("OFF");
+      servo(0);
+      if (digitalRead(S_PIN) == 0) {
+        currentState = STATE_MOVE_Y2;
+        Serial.println("STATE_MOVE_Y2");
+        Y2_trigger = true;
+        delay(3000);
+        pump("ON");
+        servo(90);
+      }
+      break;
+    case STATE_MOVE_Y2:
+      runStepperY(Y2);
+      if (digitalRead(Y2_PIN) == 0) {
+        currentState = STATE_HOME_Y;
+        Serial.println("STATE_HOME_Y");
+        Y2_trigger = false;
+        delay(3000);
+      }
+      break;
+    case STATE_HOME_Y:
+      runStepperY(Y0);
+      currentState = STATE_MOVING;
+      Serial.println("STATE_MOVING");
+      delay(1000);
+
+      break;
+    case STATE_MOVING:
+      runStepperX(X1);
+      delay(1000);
+      runStepperY(Y1);
+      delay(5000);
+      runStepperX(X2);
+      delay(4000);
+
+      pump("OFF");
+      delay(3000);
+      servo(0);
+      delay(3000);
+
+      runStepperX(X1);
+      delay(1000);
+      runStepperY(Y0);
+      delay(1000);
+      runStepperX(X0);
+      delay(1000);
+
+      currentState = STATE_HOME_X;
+      break;
+
+    case STATE_HOME_X:
+      currentState = STATE_WAIT_START;
+      Serial.println("STATE_WAIT_START");
+      break;
+  }
+}
+
+void runStepperX(double pos) {
+  stepperX.setStartDirection(startDirX);
+  stepperX.setStepsPerUnit(stepsPerUnitX);
+  stepperX.setSpeed(speedX);
+  stepperX.moveTo(pos);
+}
+
+void runStepperY(double absolute) {
+  long target = absolute * stepsPerUnitY;
+  double step_delay = 1000L * 1000L / stepsPerUnitY / speedY;
+  double _delay = 0.5 * step_delay - 5;
+  bool pul_status = LOW;
+  bool direction = LOW;
+  if (positonY == target) {
+    return;
+  } else {
+    if (positonY < target) {
+      direction = HIGH;
+    } else {
+      direction = LOW;
+    }
+  }
+
+  digitalWrite(DIR2_PIN, startDirY ? direction : !direction);
+
+  while (positonY != target) {
+    digitalWrite(PUL2_PIN, HIGH);
+    delayMicroseconds(_delay);
+    digitalWrite(PUL2_PIN, LOW);
+    delayMicroseconds(_delay);
+    positonY = (positonY < target) ? positonY + 1 : positonY - 1;
+    if (digitalRead(Y2_PIN) == 0 && Y2_trigger) {
+      currentState = STATE_HOME_Y;
+      Serial.println("STATE_HOME_Y");
+      Y2_trigger = false;
+      delay(1000);
+      break;
+    }
+  }
+}
+
+void pump(String s) {
+  bool status = LOW;  //LOW: relay low level, HIGH: relay high level
+  if (s == "ON") {
+    digitalWrite(Pump_PIN, status);
+  } else if (s == "OFF") {
+    digitalWrite(Pump_PIN, !status);
+  } else {
+    digitalWrite(Pump_PIN, !status);
+  }
+}
+
+void servo(int deg) {
+  myservo.write(deg);
+  // for (angle = 0; angle <= deg; angle += 1) {
+  //   myservo.write(angle);
+  //   delay(15);
+  // }
+}
