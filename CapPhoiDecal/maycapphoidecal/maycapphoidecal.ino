@@ -18,16 +18,17 @@ Servo myservo;
 #define Y0_PIN 10    //map to Y limit
 #define Y2_PIN 11    // map to Z limit
 #define Servo_PIN 4  // map to step Z
-#define S_PIN 12     //map to SpnEn
+#define START_PIN 12     //map to SpnEn
 #define Pump_PIN A3  //map to CoolEn
 
 #define STATE_STARTUP 0
-#define STATE_HOME_X 2
-#define STATE_HOME_Y 3
-#define STATE_WAIT_START 4
-#define STATE_MOVING 5
+#define STATE_WAIT_START 1
+#define STATE_CHECK_START 2
+#define STATE_HOME_X 3
+#define STATE_HOME_Y 4
+#define STATE_MOVE_Y0 5
 #define STATE_MOVE_Y2 6
-#define STATE_MOVE_Y0 8
+#define STATE_MOVING 7
 
 byte currentState = STATE_STARTUP;
 
@@ -48,6 +49,9 @@ double Y2 = 200;
 double speedX = 0.25;  //set 2 round/s
 double speedY = 100.0;  //set 100 mm/s
 
+//time ms
+long start_time_delay = 3000;
+
 //
 double microStepX = 16;
 double angleStepX = 1.8;
@@ -57,15 +61,16 @@ double disPerRoundX = 1;
 double disPerRoundY = 40;  //20x2=40mm
 bool startDirX = HIGH;
 bool startDirY = LOW;
-double targetX = 0;
-double targetY = 0;
 
 double stepsPerUnitX = calStepPerUnit(angleStepX, microStepX, disPerRoundX);
 double stepsPerUnitY = calStepPerUnit(angleStepY, microStepY, disPerRoundY);
 
 //
+double targetX = 0;
+double targetY = 0;
 double positionY = 0;
 bool Y2_trigger = false;
+long start_time_trigger = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -81,7 +86,7 @@ void setup() {
   pinMode(X0_PIN, INPUT_PULLUP);
   pinMode(Y0_PIN, INPUT_PULLUP);
   pinMode(Y2_PIN, INPUT_PULLUP);
-  pinMode(S_PIN, INPUT_PULLUP);
+  pinMode(START_PIN, INPUT_PULLUP);
 
 
   stepperX.setStepsPerUnit(stepsPerUnitX);
@@ -124,13 +129,26 @@ void updateState(byte aState) {
     case STATE_WAIT_START:
       pump("OFF");
       servo(0);
-      if (digitalRead(S_PIN) == 0) {
+      if (digitalRead(START_PIN) == 0) {
+        currentState = STATE_CHECK_START;
+        Serial.println("STATE_CHECK_START");
+        start_time_trigger = millis();
+        Serial.print(start_time_trigger);
+      }
+      break;
+    case STATE_CHECK_START:
+      Serial.println(millis());
+      if (digitalRead(START_PIN) == 1){
+        currentState = STATE_WAIT_START;
+        Serial.println("STATE_WAIT_START");
+      }
+      if (digitalRead(START_PIN) == 0 && (millis() - start_time_delay >= start_time_trigger) ) {
         currentState = STATE_MOVE_Y2;
         Serial.println("STATE_MOVE_Y2");
         Y2_trigger = true;
-        delay(3000);
         pump("ON");
         servo(90);
+        delay(500);
       }
       break;
     case STATE_MOVE_Y2:
@@ -170,6 +188,7 @@ void updateState(byte aState) {
       delay(1000);
 
       currentState = STATE_WAIT_START;
+      Serial.println("STATE_WAIT_START");
       break;
   }
 }
