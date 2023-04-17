@@ -60,9 +60,9 @@ long _t4 = millis();
 long _t_Press = millis();
 ;
 
-String menu[] = { "So xung M1", "Toc do M1", "Thoi gian M1", "So xung M2", "Toc do M2", "Thoi gian M2", "So xung M3", "Toc do M3", "Thoi gian M3", "So xung M4", "Toc do M4", "Thoi gian M4" };
-long menuValue[] = { D200, D202, D204, D220, D222, D224, D240, D242, D244, D260, D262, D264 };
-int menuLen = 12;
+String menu[] = { "So xung M1", "Thoi gian M1", "So xung M2", "Thoi gian M2", "So xung M3", "Thoi gian M3", "So xung M4", "Thoi gian M4" };
+long menuValue[] = { D200, D204, D220, D224, D240, D244, D260, D264 };
+int menuLen = 8;
 
 void setup() {
   Serial.begin(9600);
@@ -125,45 +125,45 @@ void loop() {
     }
 
   } else {
-    if (millis() - _t1 >= menuValue[2] * 1000) {
+    if (millis() - _t1 >= menuValue[1] * 1000) {
       _t1 = millis();
       M1 = true;
     }
-    if (millis() - _t2 >= menuValue[5] * 1000) {
+    if (millis() - _t2 >= menuValue[3] * 1000) {
       _t2 = millis();
       M2 = true;
     }
-    if (millis() - _t3 >= menuValue[8] * 1000) {
+    if (millis() - _t3 >= menuValue[5] * 1000) {
       _t3 = millis();
       M3 = true;
     }
-    if (millis() - _t4 >= menuValue[11] * 1000) {
+    if (millis() - _t4 >= menuValue[7] * 1000) {
       _t4 = millis();
       M4 = true;
     }
     if (M1) {
-      motor_01.DRVI(menuValue[0], menuValue[1]);
+      motor_01.DRVI(menuValue[0], D202);
       if (motor_01.getExeCompleteFlag()) {
         M1 = false;
         D0++;
       }
     }
     if (M2) {
-      motor_02.DRVI(menuValue[3], menuValue[4]);
+      motor_02.DRVI(menuValue[2], D222);
       if (motor_02.getExeCompleteFlag()) {
         M2 = false;
         D20++;
       }
     }
     if (M3) {
-      motor_03.DRVI(menuValue[6], menuValue[7]);
+      motor_03.DRVI(menuValue[4], D242);
       if (motor_03.getExeCompleteFlag()) {
         M3 = false;
         D40++;
       }
     }
     if (M4) {
-      motor_04.DRVI(menuValue[9], menuValue[10]);
+      motor_04.DRVI(menuValue[6], D262);
       if (motor_04.getExeCompleteFlag()) {
         M4 = false;
         D60++;
@@ -217,7 +217,7 @@ void updateState(int i) {
         menuValue[i] = menuValue[i] <= 0 ? 0 : menuValue[i] - 1;
         lcd.setCursor(0, 1);
         lcd.print(menuValue[i]);
-        delay(10);        
+        delay(10);
       }
     }
 
@@ -246,17 +246,13 @@ void readData() {
   if (debug) serializeJsonPretty(DataDoc, Serial);
   if (DataDoc["isStore"] == 1) {
     menuValue[0] = DataDoc["p1"];
-    menuValue[1] = DataDoc["f1"];
-    menuValue[2] = DataDoc["t1"];
-    menuValue[3] = DataDoc["p2"];
-    menuValue[4] = DataDoc["f2"];
-    menuValue[5] = DataDoc["t2"];
-    menuValue[6] = DataDoc["p3"];
-    menuValue[7] = DataDoc["f3"];
-    menuValue[8] = DataDoc["t3"];
-    menuValue[9] = DataDoc["p4"];
-    menuValue[10] = DataDoc["f4"];
-    menuValue[11] = DataDoc["t4"];
+    menuValue[1] = DataDoc["t1"];
+    menuValue[2] = DataDoc["p2"];
+    menuValue[3] = DataDoc["t2"];
+    menuValue[4] = DataDoc["p3"];
+    menuValue[5] = DataDoc["t3"];
+    menuValue[6] = DataDoc["p4"];
+    menuValue[7] = DataDoc["t4"];
     for (int i = 0; i < menuLen; i++) {
       if (debug) Serial.println(menuValue[i]);
     }
@@ -269,17 +265,13 @@ void readData() {
 void writeData() {
   DataDoc["isStore"] = 1;
   DataDoc["p1"] = menuValue[0];
-  DataDoc["f1"] = menuValue[1];
-  DataDoc["t1"] = menuValue[2];
-  DataDoc["p2"] = menuValue[3];
-  DataDoc["f2"] = menuValue[4];
-  DataDoc["t2"] = menuValue[5];
-  DataDoc["p3"] = menuValue[6];
-  DataDoc["f3"] = menuValue[7];
-  DataDoc["t3"] = menuValue[8];
-  DataDoc["p4"] = menuValue[9];
-  DataDoc["f4"] = menuValue[10];
-  DataDoc["t4"] = menuValue[11];
+  DataDoc["t1"] = menuValue[1];
+  DataDoc["p2"] = menuValue[2];
+  DataDoc["t2"] = menuValue[3];
+  DataDoc["p3"] = menuValue[4];
+  DataDoc["t3"] = menuValue[5];
+  DataDoc["p4"] = menuValue[6];
+  DataDoc["t4"] = menuValue[7];
   if (debug) Serial.println("Save data to EEPROM");
   EepromStream eepromStream(0, 128);
   serializeJson(DataDoc, eepromStream);
