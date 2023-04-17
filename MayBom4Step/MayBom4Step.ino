@@ -26,6 +26,7 @@ StepperMotor motor_04(PUL4_PIN, DIR2_PIN);
 
 int state = 0;
 bool debug = true;
+bool isClearLCD = false;
 
 bool M1 = false;
 bool M2 = false;
@@ -83,10 +84,10 @@ void setup() {
   lcd.init();
   lcd.backlight();
   lcd.setCursor(3, 0);  //frint from column 3, row 0
-  lcd.print("Hero Live");
-  lcd.setCursor(0, 1);
-  lcd.print("Xin chao cac ban");
-  delay(1000);
+  lcd.print("Phat xung");
+  lcd.setCursor(5, 1);
+  lcd.print("4 truc");
+  delay(3000);
 
   M1 = true;
   M2 = true;
@@ -96,8 +97,11 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(BT1_PIN) == 0) {
-    
+  if (digitalRead(BT1_PIN) == 0 && !M1 && !M2 && !M3 && !M4) {
+    if (!isClearLCD) {
+      lcd.clear();
+      isClearLCD = true;
+    }
     if (digitalRead(MODE) == 0) {
       lcd.clear();
       Serial.println(state);
@@ -105,15 +109,17 @@ void loop() {
         ;
       state = state + 1;
     }
+    if (debug) {
+      Serial.print(menu[state]);
+      Serial.print(": ");
+      Serial.println(menuValue[state]);
+    }
 
-    Serial.print(menu[state]);
-    Serial.println(menuValue[state]);
     if (state == menuLen) {
       sweepData();
-      delay(1000);
+      // delay(1000);
       writeData();
       state = 0;
-      delay(1000);
     } else {
       updateState(state);
     }
@@ -139,34 +145,63 @@ void loop() {
       motor_01.DRVI(menuValue[0], menuValue[1]);
       if (motor_01.getExeCompleteFlag()) {
         M1 = false;
+        D0++;
       }
     }
     if (M2) {
       motor_02.DRVI(menuValue[3], menuValue[4]);
       if (motor_02.getExeCompleteFlag()) {
         M2 = false;
+        D20++;
       }
     }
     if (M3) {
       motor_03.DRVI(menuValue[6], menuValue[7]);
       if (motor_03.getExeCompleteFlag()) {
         M3 = false;
+        D40++;
       }
     }
     if (M4) {
       motor_04.DRVI(menuValue[9], menuValue[10]);
       if (motor_04.getExeCompleteFlag()) {
         M4 = false;
+        D60++;
+      }
+    }
+    if (!M1 && !M2 && !M3 && !M4) {
+      if (isClearLCD) {
+        lcd.clear();
+        isClearLCD = false;
+      }
+      displayLCD();
+      if (debug) {
+        Serial.print("So lan phat xung ");
+        Serial.print(D0);
+        Serial.print(" ");
+        Serial.print(D20);
+        Serial.print(" ");
+        Serial.print(D40);
+        Serial.print(" ");
+        Serial.println(D60);
       }
     }
   }
 }
 
-void displayLCD(){
+void displayLCD() {
   lcd.setCursor(0, 0);
-  lcd.print("Dang cho");
+  lcd.print("A:");
+  lcd.print(D0);
+  lcd.setCursor(8, 0);
+  lcd.print("C:");
+  lcd.print(D40);
   lcd.setCursor(0, 1);
-  lcd.print(".....");
+  lcd.print("B:");
+  lcd.print(D20);
+  lcd.setCursor(8, 1);
+  lcd.print("D:");
+  lcd.print(D60);
 }
 
 void updateState(int i) {
@@ -176,15 +211,28 @@ void updateState(int i) {
   lcd.setCursor(0, 1);
   lcd.print(menuValue[i]);
   if (digitalRead(DOWN) == 0) {
+    _t_Press = millis();
     while (digitalRead(DOWN) == 0) {
+      if (millis() - _t_Press > 1000) {
+        menuValue[i] = menuValue[i] <= 0 ? 0 : menuValue[i] - 1;
+        lcd.setCursor(0, 1);
+        lcd.print(menuValue[i]);
+        delay(10);        
+      }
     }
 
     menuValue[i] = menuValue[i] <= 0 ? 0 : menuValue[i] - 1;
     lcd.clear();
   }
   if (digitalRead(UP) == 0) {
-
+    _t_Press = millis();
     while (digitalRead(UP) == 0) {
+      if (millis() - _t_Press > 1000) {
+        menuValue[i] = menuValue[i] + 1;
+        lcd.setCursor(0, 1);
+        lcd.print(menuValue[i]);
+        delay(10);
+      }
     }
     menuValue[i] = menuValue[i] + 1;
     lcd.clear();
@@ -210,7 +258,7 @@ void readData() {
     menuValue[10] = DataDoc["f4"];
     menuValue[11] = DataDoc["t4"];
     for (int i = 0; i < menuLen; i++) {
-      Serial.println(menuValue[i]);
+      if (debug) Serial.println(menuValue[i]);
     }
   }
 
@@ -236,7 +284,6 @@ void writeData() {
   EepromStream eepromStream(0, 128);
   serializeJson(DataDoc, eepromStream);
   if (debug) serializeJsonPretty(DataDoc, Serial);
-  delay(1000);
 }
 
 void sweepData() {
