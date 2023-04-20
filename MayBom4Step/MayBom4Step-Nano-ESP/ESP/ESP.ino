@@ -8,6 +8,7 @@
 
 StaticJsonDocument<512> SettingDoc;
 StaticJsonDocument<512> RunDoc;
+StaticJsonDocument<128> MotorDoc;
 
 const char *ssid = "esp8266";    //Wifi SSID (Name)
 const char *pass = "123456789";  //wifi password
@@ -17,12 +18,22 @@ WebSocketsServer webSocket = WebSocketsServer(81);  //websocket init with port 8
 bool debug = true;
 int count = 0;
 long _t = millis();
+long _t0 = millis();
+long _t1 = millis();
+long _t2 = millis();
+long _t3 = millis();
 bool isConnect = false;
 
 void setup() {
   Wire.begin();  //SDA GPIO21, SCL GPIO22
   Serial.begin(9600);
   initData();
+
+  EEPROM.begin(512);
+  EepromStream eepromStream(0, 512);
+  deserializeJson(SettingDoc, eepromStream);
+  if (debug) serializeJsonPretty(SettingDoc, Serial);
+
   Serial.println("Connecting to wifi");
   IPAddress apIP(192, 168, 98, 100);                           //Static IP for wifi gateway
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));  //set Static IP gateway on NodeMCU
@@ -39,18 +50,35 @@ void loop() {
   // sendI2C(I2C_SLAVE_ADDRESS, msg);
   // delay(1000);
   // count++;
-  if (millis() - _t > 10000 && isConnect) {
+  if (millis() - _t > 1000 && isConnect) {
     _t = millis();
     sendRunTime();
   }
+  if (millis() - _t0 > SettingDoc["motors"][0]["setTime"]) {
+    _t0 = millis();
+    sendI2C(I2C_SLAVE_ADDRESS, SettingDoc, 0);
+  }
+  if (millis() - _t1 > SettingDoc["motors"][1]["setTime"]) {
+    _t1 = millis();
+    sendI2C(I2C_SLAVE_ADDRESS, SettingDoc, 1);
+  }
+  if (millis() - _t2 > SettingDoc["motors"][2]["setTime"]) {
+    _t2 = millis();
+    sendI2C(I2C_SLAVE_ADDRESS, SettingDoc, 2);
+  }
+  if (millis() - _t3 > SettingDoc["motors"][3]["setTime"]) {
+    _t3 = millis();
+    sendI2C(I2C_SLAVE_ADDRESS, SettingDoc, 3);
+  }
 }
 
-void sendI2C(int addI2C, String para) {
-  //Send value 12 to slave
+void sendI2C(int addI2C, StaticJsonDocument<512> Doc, int noM) {
+  String msg = "G10 M" + String(noM) + " P" + String(SettingDoc["motors"][noM]["pulse"]) + " F" + String(SettingDoc["motors"][noM]["speed"]);
+  //M0 Pxxx Fxxx
   Wire.beginTransmission(addI2C);
-  Wire.write(para.c_str());
+  Wire.write(msg.c_str());
   Serial.print("sending ");
-  Serial.print(para);
+  Serial.print(msg);
   Serial.print(" to I2C address ");
   Serial.println(addI2C);
   Wire.endTransmission();
@@ -62,7 +90,7 @@ void requestI2C(int addI2C) {
   while (Wire.available()) {  // slave may send less than requested
     char c = Wire.read();     // receive a byte as character
     para += c;
-    Serial.print(c);  // print the character para = M-nuMotor-T-motorType
+    Serial.print(c);  // print the character para
   }
 }
 
@@ -110,7 +138,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 void RunEvent(String json) {
   StaticJsonDocument<512> data;
   DeserializationError error = deserializeJson(data, json);
- 
+
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
@@ -120,6 +148,10 @@ void RunEvent(String json) {
 
   if (type == "set") {
     SettingDoc = data;
+    if(debug) Serial.println("Save to EEPROM");
+    EepromStream eepromStream(0, 512);
+    serializeJson(SettingDoc, eepromStream);
+    eepromStream.flush();  // (for ESP)
   }
   if (type == "get") {
     sendDataToApp(SettingDoc);
@@ -134,11 +166,15 @@ void sendDataToApp(StaticJsonDocument<512> jsonDoc) {
 }
 
 void sendRunTime() {
+  long __t0 = SettingDoc["motors"][0]["setTime"] ;
+  long __t1 = SettingDoc["motors"][1]["setTime"] ;
+  long __t2 = SettingDoc["motors"][2]["setTime"] ;
+  long __t3 = SettingDoc["motors"][3]["setTime"] ;
   RunDoc["type"] = "run";
-  RunDoc["runTime"][0] = millis();
-  RunDoc["runTime"][1] = millis();
-  RunDoc["runTime"][2] = millis();
-  RunDoc["runTime"][3] = millis();
+  RunDoc["runTime"][0] = __t0 - (millis() - _t0);
+  RunDoc["runTime"][1] = __t1 - (millis() - _t1);
+  RunDoc["runTime"][2] = __t2 - (millis() - _t2);
+  RunDoc["runTime"][3] = __t3 - (millis() - _t3);
   sendDataToApp(RunDoc);
 }
 void initData() {
