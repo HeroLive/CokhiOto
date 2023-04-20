@@ -62,6 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late IOWebSocketChannel channel;
   late bool connected; //boolean value to track if WebSocket is connected
   late bool isLoaded;
+  late bool isSetting;
   String msg = '';
   List<Motor> motor_list = [
     Motor(1, 101, 1001, 1),
@@ -70,6 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Motor(4, 404, 4004, 4)
   ];
   late SettingData settingData;
+  late SettingData displaySettingData;
   late RunData runData;
 
   double btWidth = 40;
@@ -79,9 +81,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     runData = RunData("run", [0, 0, 0, 0]);
-    settingData = SettingData("setting", motor_list);
+    displaySettingData = SettingData("set", motor_list);
     connected = false; //initially connection status is "NO" so its FALSE
     isLoaded = false;
+    isSetting = false;
     Future.delayed(Duration.zero, () async {
       channelconnect(); //connect to WebSocket wth NodeMCU
     });
@@ -102,18 +105,31 @@ class _MyHomePageState extends State<MyHomePage> {
             });
           } else {
             Map<String, dynamic> json = jsonDecode(message);
-            if (json.containsValue("run")) {
+            if (json.containsValue("run") && !isSetting) {
               var getData = RunData.fromJson(json);
+              runData = getData;
+              for (var i = 0; i < runData.runTime.length; i++) {
+                runData.runTime[i] = runData.runTime[i] / 1000;
+              }
               setState(() {
                 isLoaded = true;
-                runData = getData;
+                runData;
               });
             }
-            if (json.containsValue("set")) {
+            if (json.containsValue("set") && !isSetting) {
               var getData = SettingData.fromJson(json);
+              settingData = getData;
+              for (var i = 0; i < settingData.motors.length; i++) {
+                displaySettingData.motors[i].setTime =
+                    settingData.motors[i].setTime / 1000;
+                displaySettingData.motors[i].pulse =
+                    settingData.motors[i].pulse;
+                displaySettingData.motors[i].speed =
+                    settingData.motors[i].speed;
+              }
               setState(() {
                 isLoaded = true;
-                settingData = getData;
+                displaySettingData;
               });
             }
           }
@@ -147,8 +163,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+//{"type":"set","motors":[{"noM":1,"pulse":6400.0,"speed":20000.0,"setTime":1000.0},{"noM":2,"pulse":2222.0,"speed":2002.0,"setTime":20000.0},{"noM":3,"pulse":3333.0,"speed":3003.0,"setTime":30000.0},{"noM":4,"pulse":4444.0,"speed":4004.0,"setTime":40000.0}]}
   void sendToServer(SettingData data) {
-    String s = jsonEncode(data);
+    for (var i = 0; i < data.motors.length; i++) {
+      settingData.motors[i].setTime = data.motors[i].setTime * 1000;
+      settingData.motors[i].pulse = data.motors[i].pulse;
+      settingData.motors[i].speed = data.motors[i].speed;
+    }
+    String s = jsonEncode(settingData);
     print(s);
     if (s.isNotEmpty) {
       try {
@@ -179,15 +201,57 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: <Widget>[
-          IconButton(
-            onPressed: () {
-              connected ? reloadData() : null;
-            },
-            icon: Icon(
-              Icons.refresh,
-              color: isLoaded ? Colors.white : Colors.white54,
+          if (isSetting) ...[
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  isSetting = false;
+                });
+              },
+              icon: Icon(
+                Icons.cancel,
+                color: connected ? Colors.white : Colors.white54,
+              ),
             ),
-          ),
+            IconButton(
+              onPressed: () {
+                sendToServer(displaySettingData);
+                setState(() {
+                  isSetting = false;
+                });
+              },
+              icon: Icon(
+                Icons.save,
+                color: connected ? Colors.white : Colors.white54,
+              ),
+            )
+          ] else ...[
+            IconButton(
+              onPressed: () {
+                connected
+                    ? (setState(() {
+                        isSetting = true;
+                      }))
+                    : null;
+              },
+              icon: Icon(
+                Icons.settings,
+                color: connected ? Colors.white : Colors.white54,
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                sendToServer(displaySettingData);
+                setState(() {
+                  isSetting = false;
+                });
+              },
+              icon: Icon(
+                Icons.save,
+                color: connected ? Colors.white : Colors.white54,
+              ),
+            )
+          ],
           IconButton(
               onPressed: () {
                 connected ? channeldisconnect() : channelconnect();
@@ -201,39 +265,14 @@ class _MyHomePageState extends State<MyHomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        settingData.type = "set";
-                        sendToServer(settingData);
-                      },
-                      style: ButtonStyle(
-                        overlayColor:
-                            MaterialStateProperty.all(Colors.orangeAccent),
-                        padding:
-                            MaterialStateProperty.all(const EdgeInsets.all(15)),
-                        fixedSize:
-                            MaterialStateProperty.all(const Size(100, 60)),
-                      ),
-                      child: Text('Save',
-                          style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            motorItem(context, settingData.motors[0], runData.runTime[0]),
-            motorItem(context, settingData.motors[1], runData.runTime[1]),
-            motorItem(context, settingData.motors[2], runData.runTime[2]),
-            motorItem(context, settingData.motors[3], runData.runTime[3]),
+            motorItem(
+                context, displaySettingData.motors[0], runData.runTime[0]),
+            motorItem(
+                context, displaySettingData.motors[1], runData.runTime[1]),
+            motorItem(
+                context, displaySettingData.motors[2], runData.runTime[2]),
+            motorItem(
+                context, displaySettingData.motors[3], runData.runTime[3]),
             Padding(padding: EdgeInsets.only(top: 80))
           ],
         ),
@@ -264,6 +303,7 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Expanded(
                   child: TextField(
+                    enabled: isSetting ? true : false,
                     decoration: InputDecoration(
                         border: OutlineInputBorder(), labelText: 'Số xung'),
                     keyboardType: TextInputType.number,
@@ -283,6 +323,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Padding(padding: EdgeInsets.all(4)),
                 Expanded(
                   child: TextField(
+                    enabled: isSetting ? true : false,
                     decoration: InputDecoration(
                         border: OutlineInputBorder(), labelText: 'Tốc độ'),
                     keyboardType: TextInputType.number,
@@ -307,6 +348,7 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Expanded(
                   child: TextField(
+                    enabled: isSetting ? true : false,
                     decoration: InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Thời gian cài đặt'),
@@ -327,6 +369,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Padding(padding: EdgeInsets.all(4)),
                 Expanded(
                   child: TextField(
+                      enabled: false,
                       decoration: InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Thời gian chạy'),

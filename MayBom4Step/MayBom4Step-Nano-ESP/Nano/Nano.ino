@@ -1,12 +1,18 @@
 #include <Wire.h>
 #include "StepperMotor.h"
-#define PUL1_PIN 4
-#define DIR1_PIN 13
+#define PUL0_PIN 4
+#define PUL1_PIN 5
+#define PUL2_PIN 6
+#define PUL3_PIN 7
+#define DIR0_PIN 13
 
 #define I2C_SLAVE_ADDRESS 99
 
 
-StepperMotor motor_01(PUL1_PIN, DIR1_PIN);
+StepperMotor motor_00(PUL0_PIN, DIR0_PIN);
+StepperMotor motor_01(PUL1_PIN, DIR0_PIN);
+StepperMotor motor_02(PUL2_PIN, DIR0_PIN);
+StepperMotor motor_03(PUL3_PIN, DIR0_PIN);
 
 int state = 0;
 bool debug = false;
@@ -36,9 +42,30 @@ void setup() {
 void loop() {
   if (M[0]) {
     if (debug) Serial.println(P[0]);
-    motor_01.DRVI(P[0], F[0]);
-    if (motor_01.getExeCompleteFlag()) {
+    motor_00.DRVI(P[0], F[0]);
+    if (motor_00.getExeCompleteFlag()) {
       M[0] = false;
+    }
+  }
+  if (M[1]) {
+    if (debug) Serial.println(P[1]);
+    motor_01.DRVI(P[1], F[1]);
+    if (motor_01.getExeCompleteFlag()) {
+      M[1] = false;
+    }
+  }
+  if (M[2]) {
+    if (debug) Serial.println(P[2]);
+    motor_02.DRVI(P[2], F[2]);
+    if (motor_02.getExeCompleteFlag()) {
+      M[2] = false;
+    }
+  }
+  if (M[3]) {
+    if (debug) Serial.println(P[3]);
+    motor_03.DRVI(P[3], F[3]);
+    if (motor_03.getExeCompleteFlag()) {
+      M[3] = false;
     }
   }
 }
