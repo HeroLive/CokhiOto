@@ -82,6 +82,12 @@ class _MyHomePageState extends State<MyHomePage> {
   late SettingData settingData;
   late DisplaySettingData displaySettingData;
   late RunData runData;
+  List<Time> displayRunTime = [
+    Time(1, 0, 0, 0),
+    Time(2, 0, 0, 0),
+    Time(3, 0, 0, 0),
+    Time(4, 0, 0, 0)
+  ];
 
   double btWidth = 40;
   double btHeigh = 40;
@@ -119,11 +125,16 @@ class _MyHomePageState extends State<MyHomePage> {
               var getData = RunData.fromJson(json);
               runData = getData;
               for (var i = 0; i < runData.runTime.length; i++) {
-                runData.runTime[i] = runData.runTime[i] / 1000;
+                var seconds = (runData.runTime[i] / 1000).toInt();
+                var duration = Duration(seconds: seconds);
+                displayRunTime[i].noM = 1;
+                displayRunTime[i].h = duration.inHours;
+                displayRunTime[i].m = duration.inMinutes;
+                displayRunTime[i].s = duration.inSeconds;
               }
               setState(() {
                 isLoaded = true;
-                runData;
+                displayRunTime;
               });
             }
             if (json.containsValue("set") && !isSetting) {
@@ -278,14 +289,10 @@ class _MyHomePageState extends State<MyHomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            motorItem(
-                context, displaySettingData.motors[0], runData.runTime[0]),
-            motorItem(
-                context, displaySettingData.motors[1], runData.runTime[1]),
-            motorItem(
-                context, displaySettingData.motors[2], runData.runTime[2]),
-            motorItem(
-                context, displaySettingData.motors[3], runData.runTime[3]),
+            motorItem(context, displaySettingData.motors[0], displayRunTime[0]),
+            motorItem(context, displaySettingData.motors[1], displayRunTime[1]),
+            motorItem(context, displaySettingData.motors[2], displayRunTime[2]),
+            motorItem(context, displaySettingData.motors[3], displayRunTime[3]),
             Padding(padding: EdgeInsets.only(top: 80))
           ],
         ),
@@ -293,7 +300,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget motorItem(BuildContext context, DisplayMotor motor, double time) {
+  Widget motorItem(BuildContext context, DisplayMotor motor, Time time) {
     double tfWidth = 200;
     double textFontSize = 24;
     return Card(
@@ -306,9 +313,9 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               "Motor ${motor.noM}",
               style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.redAccent),
+                  color: Colors.lightBlue),
             ),
             Padding(padding: EdgeInsets.all(10)),
             Row(
@@ -400,17 +407,21 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 Padding(padding: EdgeInsets.all(4)),
                 Expanded(
-                  child: TextField(
-                      enabled: false,
-                      decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: 'Thời gian chạy'),
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(fontSize: textFontSize),
+                  child: Container(
+                    padding: const EdgeInsets.all(19.0),
+                    decoration: BoxDecoration(
+                      border: Border.all(width: 2, color: Colors.blueGrey),
+                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                    ),
+                    child: Text(
+                      "${time.h}:${time.m}:${time.s}",
+                      style: TextStyle(
+                          fontSize: textFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.lightGreen),
                       textAlign: TextAlign.center,
-                      textAlignVertical: TextAlignVertical.center,
-                      controller: TextEditingController()
-                        ..text = time.toStringAsFixed(0)),
+                    ),
+                  ),
                 ),
               ],
             )

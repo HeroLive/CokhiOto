@@ -4,9 +4,9 @@ part 'time.g.dart';
 @JsonSerializable()
 class Time {
   int noM;
-  double h;
-  double m;
-  double s;
+  int h;
+  int m;
+  int s;
 
   Time(this.noM, this.h, this.m, this.s);
 

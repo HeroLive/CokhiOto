@@ -8,9 +8,9 @@ part of 'time.dart';
 
 Time _$TimeFromJson(Map<String, dynamic> json) => Time(
       json['noM'] as int,
-      (json['h'] as num).toDouble(),
-      (json['m'] as num).toDouble(),
-      (json['s'] as num).toDouble(),
+      json['h'] as int,
+      json['m'] as int,
+      json['s'] as int,
     );
 
 Map<String, dynamic> _$TimeToJson(Time instance) => <String, dynamic>{
