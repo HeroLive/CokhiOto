@@ -1,12 +1,15 @@
 import 'dart:convert';
 
+import 'package:app_pump/displaySettingData.dart';
 import 'package:app_pump/motor.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import './motor.dart';
+import './displayMotor.dart';
 import './runData.dart';
 import './settingData.dart';
+import './displaySettingData.dart';
 import './time.dart';
 
 const String esp_url = 'ws://192.168.98.100:81';
@@ -65,13 +68,19 @@ class _MyHomePageState extends State<MyHomePage> {
   late bool isSetting;
   String msg = '';
   List<Motor> motor_list = [
-    Motor(1, 101, 1001, 1),
-    Motor(2, 202, 2002, 2),
-    Motor(3, 303, 3003, 3),
-    Motor(4, 404, 4004, 4)
+    Motor(1, 101, 1, 1001, 1),
+    Motor(2, 202, 1, 2002, 2),
+    Motor(3, 303, 1, 3003, 3),
+    Motor(4, 404, 1, 4004, 4)
+  ];
+  List<DisplayMotor> display_motor_list = [
+    DisplayMotor(1, 101, 1, 1001, 1),
+    DisplayMotor(2, 202, 1, 2002, 2),
+    DisplayMotor(3, 303, 1, 3003, 3),
+    DisplayMotor(4, 404, 1, 4004, 4)
   ];
   late SettingData settingData;
-  late SettingData displaySettingData;
+  late DisplaySettingData displaySettingData;
   late RunData runData;
 
   double btWidth = 40;
@@ -81,7 +90,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     runData = RunData("run", [0, 0, 0, 0]);
-    displaySettingData = SettingData("set", motor_list);
+    displaySettingData = DisplaySettingData("set", display_motor_list);
+    settingData = SettingData("set", motor_list);
     connected = false; //initially connection status is "NO" so its FALSE
     isLoaded = false;
     isSetting = false;
@@ -122,8 +132,9 @@ class _MyHomePageState extends State<MyHomePage> {
               for (var i = 0; i < settingData.motors.length; i++) {
                 displaySettingData.motors[i].setTime =
                     settingData.motors[i].setTime / 1000;
-                displaySettingData.motors[i].pulse =
-                    settingData.motors[i].pulse;
+                displaySettingData.motors[i].volumn =
+                    settingData.motors[i].pulse /
+                        settingData.motors[i].microStep;
                 displaySettingData.motors[i].speed =
                     settingData.motors[i].speed;
               }
@@ -164,11 +175,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 //{"type":"set","motors":[{"noM":1,"pulse":6400.0,"speed":20000.0,"setTime":1000.0},{"noM":2,"pulse":2222.0,"speed":2002.0,"setTime":20000.0},{"noM":3,"pulse":3333.0,"speed":3003.0,"setTime":30000.0},{"noM":4,"pulse":4444.0,"speed":4004.0,"setTime":40000.0}]}
-  void sendToServer(SettingData data) {
+  void sendToServer(DisplaySettingData data) {
     for (var i = 0; i < data.motors.length; i++) {
       settingData.motors[i].setTime = data.motors[i].setTime * 1000;
-      settingData.motors[i].pulse = data.motors[i].pulse;
+      settingData.motors[i].pulse =
+          data.motors[i].volumn * data.motors[i].microStep;
       settingData.motors[i].speed = data.motors[i].speed;
+      settingData.motors[i].microStep = data.motors[i].microStep;
     }
     String s = jsonEncode(settingData);
     print(s);
@@ -280,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget motorItem(BuildContext context, Motor motor, double time) {
+  Widget motorItem(BuildContext context, DisplayMotor motor, double time) {
     double tfWidth = 200;
     double textFontSize = 24;
     return Card(
@@ -305,17 +318,36 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: TextField(
                     enabled: isSetting ? true : false,
                     decoration: InputDecoration(
-                        border: OutlineInputBorder(), labelText: 'Số xung'),
+                        border: OutlineInputBorder(), labelText: 'Dung tích'),
                     keyboardType: TextInputType.number,
                     autocorrect: true,
                     style: TextStyle(fontSize: textFontSize),
                     textAlign: TextAlign.center,
                     textAlignVertical: TextAlignVertical.center,
                     controller: TextEditingController()
-                      ..text = motor.pulse.toStringAsFixed(0),
+                      ..text = motor.volumn.toStringAsFixed(2),
                     onChanged: (String value) {
                       if (value.length > 0) {
-                        motor.pulse = double.parse(value);
+                        motor.volumn = double.parse(value);
+                      }
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: TextField(
+                    enabled: isSetting ? true : false,
+                    decoration: InputDecoration(
+                        border: OutlineInputBorder(), labelText: 'Vi bước'),
+                    keyboardType: TextInputType.number,
+                    autocorrect: true,
+                    style: TextStyle(fontSize: textFontSize),
+                    textAlign: TextAlign.center,
+                    textAlignVertical: TextAlignVertical.center,
+                    controller: TextEditingController()
+                      ..text = motor.microStep.toStringAsFixed(0),
+                    onChanged: (String value) {
+                      if (value.length > 0) {
+                        motor.microStep = double.parse(value);
                       }
                     },
                   ),

@@ -5,10 +5,11 @@ part 'motor.g.dart';
 class Motor {
   int noM;
   double pulse;
+  double microStep;
   double speed;
   double setTime;
 
-  Motor(this.noM, this.pulse, this.speed, this.setTime);
+  Motor(this.noM, this.pulse, this.microStep, this.speed, this.setTime);
 
   factory Motor.fromJson(Map<String, dynamic> json) => _$MotorFromJson(json);
   Map<String, dynamic> toJson() => _$MotorToJson(this);

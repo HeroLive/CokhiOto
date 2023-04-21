@@ -1,22 +1,23 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'motor.dart';
+part of 'displayMotor.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-Motor _$MotorFromJson(Map<String, dynamic> json) => Motor(
+DisplayMotor _$DisplayMotorFromJson(Map<String, dynamic> json) => DisplayMotor(
       json['noM'] as int,
-      (json['pulse'] as num).toDouble(),
+      (json['volumn'] as num).toDouble(),
       (json['microStep'] as num).toDouble(),
       (json['speed'] as num).toDouble(),
       (json['setTime'] as num).toDouble(),
     );
 
-Map<String, dynamic> _$MotorToJson(Motor instance) => <String, dynamic>{
+Map<String, dynamic> _$DisplayMotorToJson(DisplayMotor instance) =>
+    <String, dynamic>{
       'noM': instance.noM,
-      'pulse': instance.pulse,
+      'volumn': instance.volumn,
       'microStep': instance.microStep,
       'speed': instance.speed,
       'setTime': instance.setTime,

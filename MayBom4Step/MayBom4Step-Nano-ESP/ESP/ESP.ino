@@ -187,6 +187,10 @@ void initData() {
   SettingDoc["motors"][1]["pulse"] = 200;
   SettingDoc["motors"][2]["pulse"] = 300;
   SettingDoc["motors"][3]["pulse"] = 400;
+  SettingDoc["motors"][0]["microStep"] = 1;
+  SettingDoc["motors"][1]["microStep"] = 1;
+  SettingDoc["motors"][2]["microStep"] = 1;
+  SettingDoc["motors"][3]["microStep"] = 1;
   SettingDoc["motors"][0]["speed"] = 1000;
   SettingDoc["motors"][1]["speed"] = 2000;
   SettingDoc["motors"][2]["speed"] = 3000;
