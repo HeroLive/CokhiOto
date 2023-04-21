@@ -68,25 +68,31 @@ class _MyHomePageState extends State<MyHomePage> {
   late bool isSetting;
   String msg = '';
   List<Motor> motor_list = [
-    Motor(1, 101, 1, 1001, 1),
-    Motor(2, 202, 1, 2002, 2),
-    Motor(3, 303, 1, 3003, 3),
-    Motor(4, 404, 1, 4004, 4)
+    Motor(0, 101, 1, 1001, 1),
+    Motor(1, 202, 1, 2002, 2),
+    Motor(2, 303, 1, 3003, 3),
+    Motor(3, 404, 1, 4004, 4)
   ];
   List<DisplayMotor> display_motor_list = [
-    DisplayMotor(1, 101, 1, 1001, 1),
-    DisplayMotor(2, 202, 1, 2002, 2),
-    DisplayMotor(3, 303, 1, 3003, 3),
-    DisplayMotor(4, 404, 1, 4004, 4)
+    DisplayMotor(0, 101, 1, 1001, 1),
+    DisplayMotor(1, 202, 1, 2002, 2),
+    DisplayMotor(2, 303, 1, 3003, 3),
+    DisplayMotor(3, 404, 1, 4004, 4)
   ];
   late SettingData settingData;
   late DisplaySettingData displaySettingData;
   late RunData runData;
   List<Time> displayRunTime = [
+    Time(0, 0, 0, 0),
     Time(1, 0, 0, 0),
     Time(2, 0, 0, 0),
-    Time(3, 0, 0, 0),
-    Time(4, 0, 0, 0)
+    Time(3, 0, 0, 0)
+  ];
+  List<Time> setTime = [
+    Time(0, 0, 0, 0),
+    Time(1, 0, 0, 0),
+    Time(2, 0, 0, 0),
+    Time(3, 0, 0, 0)
   ];
 
   double btWidth = 40;
@@ -125,12 +131,15 @@ class _MyHomePageState extends State<MyHomePage> {
               var getData = RunData.fromJson(json);
               runData = getData;
               for (var i = 0; i < runData.runTime.length; i++) {
-                var seconds = (runData.runTime[i] / 1000).toInt();
-                var duration = Duration(seconds: seconds);
-                displayRunTime[i].noM = 1;
-                displayRunTime[i].h = duration.inHours;
-                displayRunTime[i].m = duration.inMinutes;
-                displayRunTime[i].s = duration.inSeconds;
+                var _time = (runData.runTime[i] / 1000).toInt();
+                int hour = (_time / 3600).floor();
+                int sec = _time % 60;
+                int min = ((_time % 3600) / 60).floor();
+
+                displayRunTime[i].noM = i;
+                displayRunTime[i].s = sec;
+                displayRunTime[i].m = min;
+                displayRunTime[i].h = hour;
               }
               setState(() {
                 isLoaded = true;
@@ -148,10 +157,29 @@ class _MyHomePageState extends State<MyHomePage> {
                         settingData.motors[i].microStep;
                 displaySettingData.motors[i].speed =
                     settingData.motors[i].speed;
+
+                // var seconds = (settingData.motors[i].setTime / 1000).toInt();
+                // var duration = Duration(seconds: seconds);
+                // setTime[i].noM = i;
+                // setTime[i].h = duration.inHours;
+                // setTime[i].m = duration.inMinutes;
+                // setTime[i].s = duration.inSeconds;
+                // print(duration.inSeconds);
+
+                var _time = (settingData.motors[i].setTime / 1000);
+                var hour = (_time / 3600).floor();
+                var sec = _time % 60;
+                var min = ((_time % 3600) / 60).floor();
+
+                setTime[i].noM = i;
+                setTime[i].s = sec.toInt();
+                setTime[i].m = min.toInt();
+                setTime[i].h = hour.toInt();
               }
               setState(() {
                 isLoaded = true;
                 displaySettingData;
+                setTime;
               });
             }
           }
@@ -188,11 +216,14 @@ class _MyHomePageState extends State<MyHomePage> {
 //{"type":"set","motors":[{"noM":1,"pulse":6400.0,"speed":20000.0,"setTime":1000.0},{"noM":2,"pulse":2222.0,"speed":2002.0,"setTime":20000.0},{"noM":3,"pulse":3333.0,"speed":3003.0,"setTime":30000.0},{"noM":4,"pulse":4444.0,"speed":4004.0,"setTime":40000.0}]}
   void sendToServer(DisplaySettingData data) {
     for (var i = 0; i < data.motors.length; i++) {
-      settingData.motors[i].setTime = data.motors[i].setTime * 1000;
       settingData.motors[i].pulse =
           data.motors[i].volumn * data.motors[i].microStep;
       settingData.motors[i].speed = data.motors[i].speed;
       settingData.motors[i].microStep = data.motors[i].microStep;
+
+      var duration =
+          (setTime[i].h * 3600 + setTime[i].m * 60 + setTime[i].s) * 1000;
+      settingData.motors[i].setTime = duration;
     }
     String s = jsonEncode(settingData);
     print(s);
@@ -289,10 +320,14 @@ class _MyHomePageState extends State<MyHomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            motorItem(context, displaySettingData.motors[0], displayRunTime[0]),
-            motorItem(context, displaySettingData.motors[1], displayRunTime[1]),
-            motorItem(context, displaySettingData.motors[2], displayRunTime[2]),
-            motorItem(context, displaySettingData.motors[3], displayRunTime[3]),
+            motorItem(context, displaySettingData.motors[0], setTime[0],
+                displayRunTime[0]),
+            motorItem(context, displaySettingData.motors[1], setTime[1],
+                displayRunTime[1]),
+            motorItem(context, displaySettingData.motors[2], setTime[2],
+                displayRunTime[2]),
+            motorItem(context, displaySettingData.motors[3], setTime[3],
+                displayRunTime[3]),
             Padding(padding: EdgeInsets.only(top: 80))
           ],
         ),
@@ -300,7 +335,163 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget motorItem(BuildContext context, DisplayMotor motor, Time time) {
+  Widget timeItem(BuildContext context, Time settime) {
+    double textFontSize = 24;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(width: 2, color: Colors.black12),
+        borderRadius: BorderRadius.all(Radius.circular(5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(5.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                enabled: isSetting ? true : false,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(vertical: 0.0),
+                ),
+                keyboardType: TextInputType.number,
+                style: TextStyle(fontSize: textFontSize),
+                textAlign: TextAlign.center,
+                textAlignVertical: TextAlignVertical.center,
+                controller: TextEditingController()
+                  ..text = settime.h.toStringAsFixed(0),
+                onChanged: (String value) {
+                  if (value.length > 0) {
+                    var _h = int.parse(value);
+                    setTime[settime.noM].h = _h;
+                  }
+                },
+              ),
+            ),
+            Text(" : "),
+            Expanded(
+              child: TextField(
+                enabled: isSetting ? true : false,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(vertical: 0.0),
+                ),
+                keyboardType: TextInputType.number,
+                style: TextStyle(fontSize: textFontSize),
+                textAlign: TextAlign.center,
+                textAlignVertical: TextAlignVertical.center,
+                controller: TextEditingController()
+                  ..text = settime.m.toStringAsFixed(0),
+                onChanged: (String value) {
+                  if (value.length > 0) {
+                    var _m = int.parse(value);
+                    setTime[settime.noM].m = _m;
+                  }
+                },
+              ),
+            ),
+            Text(" : "),
+            Expanded(
+              child: TextField(
+                enabled: isSetting ? true : false,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(vertical: 0.0),
+                ),
+                keyboardType: TextInputType.number,
+                style: TextStyle(fontSize: textFontSize),
+                textAlign: TextAlign.center,
+                textAlignVertical: TextAlignVertical.center,
+                controller: TextEditingController()
+                  ..text = settime.s.toStringAsFixed(0),
+                onChanged: (String value) {
+                  if (value.length > 0) {
+                    var _s = int.parse(value);
+                    setTime[settime.noM].s = _s;
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    /*
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(width: 2, color: Colors.blueGrey),
+            borderRadius: BorderRadius.all(Radius.circular(5)),
+          ),
+          child: TextField(
+            enabled: isSetting ? true : false,
+            decoration: InputDecoration(border: OutlineInputBorder()),
+            keyboardType: TextInputType.number,
+            style: TextStyle(fontSize: textFontSize),
+            textAlign: TextAlign.center,
+            textAlignVertical: TextAlignVertical.center,
+            controller: TextEditingController()
+              ..text = settimes.h.toStringAsFixed(0),
+            onChanged: (String value) {
+              if (value.length > 0) {
+                var _h = int.parse(value);
+                runTime[settimes.noM - 1].h = _h;
+              }
+            },
+          ),
+        ),
+        Text(":"),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(width: 2, color: Colors.blueGrey),
+            borderRadius: BorderRadius.all(Radius.circular(5)),
+          ),
+          child: TextField(
+            enabled: isSetting ? true : false,
+            decoration: InputDecoration(border: OutlineInputBorder()),
+            keyboardType: TextInputType.number,
+            style: TextStyle(fontSize: textFontSize),
+            textAlign: TextAlign.center,
+            textAlignVertical: TextAlignVertical.center,
+            controller: TextEditingController()
+              ..text = settimes.h.toStringAsFixed(0),
+            onChanged: (String value) {
+              if (value.length > 0) {
+                var _m = int.parse(value);
+                runTime[settimes.noM - 1].m = _m;
+              }
+            },
+          ),
+        ),
+        Text(":"),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(width: 2, color: Colors.blueGrey),
+            borderRadius: BorderRadius.all(Radius.circular(5)),
+          ),
+          child: TextField(
+            enabled: isSetting ? true : false,
+            decoration: InputDecoration(border: OutlineInputBorder()),
+            keyboardType: TextInputType.number,
+            style: TextStyle(fontSize: textFontSize),
+            textAlign: TextAlign.center,
+            textAlignVertical: TextAlignVertical.center,
+            controller: TextEditingController()
+              ..text = settimes.h.toStringAsFixed(0),
+            onChanged: (String value) {
+              if (value.length > 0) {
+                var _s = int.parse(value);
+                runTime[settimes.noM - 1].s = _s;
+              }
+            },
+          ),
+        ),
+        
+      ],
+    );*/
+  }
+
+  Widget motorItem(
+      BuildContext context, DisplayMotor motor, Time settime, Time runtime) {
     double tfWidth = 200;
     double textFontSize = 24;
     return Card(
@@ -382,39 +573,28 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
             Padding(padding: EdgeInsets.all(10)),
+            Text(
+              "Cài đặt thời gian chạy",
+              style:
+                  TextStyle(fontSize: textFontSize - 5, color: Colors.black45),
+              textAlign: TextAlign.center,
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: TextField(
-                    enabled: isSetting ? true : false,
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Thời gian cài đặt'),
-                    keyboardType: TextInputType.number,
-                    style: TextStyle(fontSize: textFontSize),
-                    textAlign: TextAlign.center,
-                    textAlignVertical: TextAlignVertical.center,
-                    controller: TextEditingController()
-                      ..text = motor.setTime.toStringAsFixed(0),
-                    onChanged: (String value) {
-                      if (value.length > 0) {
-                        var _time = double.parse(value);
-                        motor.setTime = _time;
-                      }
-                    },
-                  ),
+                  child: timeItem(context, settime),
                 ),
                 Padding(padding: EdgeInsets.all(4)),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.all(19.0),
+                    padding: const EdgeInsets.all(15.0),
                     decoration: BoxDecoration(
                       border: Border.all(width: 2, color: Colors.blueGrey),
                       borderRadius: BorderRadius.all(Radius.circular(5)),
                     ),
                     child: Text(
-                      "${time.h}:${time.m}:${time.s}",
+                      "${runtime.h}:${runtime.m}:${runtime.s}",
                       style: TextStyle(
                           fontSize: textFontSize,
                           fontWeight: FontWeight.bold,

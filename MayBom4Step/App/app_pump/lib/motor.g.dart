@@ -11,7 +11,7 @@ Motor _$MotorFromJson(Map<String, dynamic> json) => Motor(
       (json['pulse'] as num).toDouble(),
       (json['microStep'] as num).toDouble(),
       (json['speed'] as num).toDouble(),
-      (json['setTime'] as num).toDouble(),
+      json['setTime'] as int,
     );
 
 Map<String, dynamic> _$MotorToJson(Motor instance) => <String, dynamic>{

@@ -179,10 +179,10 @@ void sendRunTime() {
 }
 void initData() {
   SettingDoc["type"] = "set";
-  SettingDoc["motors"][0]["noM"] = 1;
-  SettingDoc["motors"][1]["noM"] = 2;
-  SettingDoc["motors"][2]["noM"] = 3;
-  SettingDoc["motors"][3]["noM"] = 4;
+  SettingDoc["motors"][0]["noM"] = 0;
+  SettingDoc["motors"][1]["noM"] = 1;
+  SettingDoc["motors"][2]["noM"] = 2;
+  SettingDoc["motors"][3]["noM"] = 3;
   SettingDoc["motors"][0]["pulse"] = 100;
   SettingDoc["motors"][1]["pulse"] = 200;
   SettingDoc["motors"][2]["pulse"] = 300;

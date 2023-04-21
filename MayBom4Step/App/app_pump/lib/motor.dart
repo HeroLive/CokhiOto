@@ -7,7 +7,7 @@ class Motor {
   double pulse;
   double microStep;
   double speed;
-  double setTime;
+  int setTime;
 
   Motor(this.noM, this.pulse, this.microStep, this.speed, this.setTime);
 
