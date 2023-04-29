@@ -10,7 +10,7 @@ StaticJsonDocument<512> SettingDoc;
 StaticJsonDocument<512> RunDoc;
 StaticJsonDocument<128> MotorDoc;
 
-const char *ssid = "esp8266";    //Wifi SSID (Name)
+const char *ssid = "esp8266D1";    //Wifi SSID (Name)
 const char *pass = "123456789";  //wifi password
 
 WebSocketsServer webSocket = WebSocketsServer(81);  //websocket init with port 81

@@ -155,6 +155,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 displaySettingData.motors[i].volumn =
                     settingData.motors[i].pulse /
                         settingData.motors[i].microStep;
+                displaySettingData.motors[i].microStep =
+                    settingData.motors[i].microStep;
                 displaySettingData.motors[i].speed =
                     settingData.motors[i].speed;
 
