@@ -9,24 +9,24 @@
 StepperMotor stepperX(pulX, dirX);
 StepperMotor stepperY(pulY, dirY);
 
-float disPerRoundX = 5;                                                      // only round: 1.0 round, vitme T8-4mm: 4.0 mm, GT2 Pulley 16 Teeth: 16x2 = 32.0 mm
+float disPerRoundX = 360;                                                      // only round: 1.0 round, vitme T8-4mm: 4.0 mm, GT2 Pulley 16 Teeth: 16x2 = 32.0 mm
 int microStepX = 1;                                                          //1: full step, 2: haft step, ...
 float angleStepX = 1.8;                                                      //a step angle of 1.8 degrees with 200 steps per revolution
 float stepsPerUnitX = (1 / disPerRoundX) * 360.0 * microStepX / angleStepX;  //steps/round or steps/mm ...
-float speedX = 20;                                                            //set deg/s
+float speedX = 1000;    //chinh toc do X                                                        //set deg/s
 
 float disPerRoundY = 360;                                                      // only round: 1.0 round, vitme T8-4mm: 4.0 mm, GT2 Pulley 16 Teeth: 16x2 = 32.0 mm
 int microStepY = 1;                                                          //1: full step, 2: haft step, ...
 float angleStepY = 1.8;                                                      //a step angle of 1.8 degrees with 200 steps per revolution
 float stepsPerUnitY = (1 / disPerRoundY) * 360.0 * microStepY / angleStepY;  //steps/round or steps/mm ...
-float speedY = 200;                                                          //set deg/s
+float speedY = 10;      //chinh toc do Y                                                     //set deg/s
 
 float targetX = 0;
 float targetY = 0;
 float Xa = 0;
-float Xb = 50;
+float Xb = 90; //Chinh goc X
 float Ya = 0;
-float Yb = 90;
+float Yb = 90; //chinh goc Y
 
 bool M1 = false;
 bool M2 = false;
