@@ -4,11 +4,12 @@
 #define dirX 2
 #define pulY 6
 #define dirY 3
-#define Button_Down 9
-// #define Button_Stop 10
-#define Button_Up 11
-#define LimitA 10
-#define LimitB 12                                                  
+#define Button_Up A3    //D3 - CoolEn
+#define Button_Stop A2  //D2 - Resume
+#define Button_Down A1  //D1 - Hold
+
+#define LimitA 10  //Y+ Y-
+#define LimitB 11  //Z+ Z-
 StepperMotor stepperX(pulX, dirX);
 StepperMotor stepperY(pulY, dirY);
 
@@ -22,18 +23,18 @@ float disPerRoundX = 360;
 float gearX = 1;
 int microStepX = 1600;
 float stepsPerUnitX = microStepX * gearX / disPerRoundX;
-float speedX = 500;  //chinh toc do X
+float speedX = 1400;  //chinh toc do X
 
 float disPerRoundY = 360;
-float gearY = 1; // chinh ti le hop so 1:5 nhap 5
+float gearY = 1;  // chinh ti le hop so 1:5 nhap 5
 int microStepY = 1600;
 float stepsPerUnitY = microStepY * gearY / disPerRoundY;
-float speedY = 100;  //chinh toc do X
+float speedY = 100;  //chinh toc do Y
 
 long Xa = 0;
 long Xb = 270 * stepsPerUnitX;  //vi tri X den B
 long Ya = 0;
-long Yb = 180 * stepsPerUnitY;  //vi tri Y den B
+long Yb = 300 * stepsPerUnitY;  //Khoang chay Y tu A-B
 
 
 void setup() {
@@ -47,22 +48,22 @@ void setup() {
 }
 
 void loop() {
-  // Serial.println(digitalRead(LimitB));
-  if (digitalRead(Button_Up) == 0) {
+  // Serial.println(digitalRead(Button_Up));
+  if (analogRead(Button_Up) > 1000) {
     MXA = false;
     MXB = true;
     MYA = false;
     MYB = false;
-  } else if (digitalRead(Button_Down) == 0) {
+  } else if (analogRead(Button_Down) > 1000) {
     MXA = false;
     MXA = false;
     MYA = true;
     MYB = false;
-  // } else if (digitalRead(Button_Stop) == 0) {
-  //   MXA = false;
-  //   MXB = false;
-  //   MYA = false;
-  //   MYB = false;
+  } else if (analogRead(Button_Stop) > 1000) {
+    MXA = false;
+    MXB = false;
+    MYA = false;
+    MYB = false;
   } else if (MYB && digitalRead(LimitB) == 0) {
     MXA = false;
     MXB = false;
@@ -94,8 +95,8 @@ void loop() {
         Serial.println(stepperX.getCurrentPosition());
       }
     }
-  } else if (MYA) {
-    stepperY.DRVA(Ya, speedY);
+  } else if (MYA && digitalRead(LimitA) == 1) {
+    stepperY.DRVI(-Yb, speedY);
     if (stepperY.getExeCompleteFlag()) {
       MYA = false;
       MXA = true;
@@ -105,7 +106,7 @@ void loop() {
       }
     }
   } else if (MYB) {
-    stepperY.DRVA(Yb, speedY);
+    stepperY.DRVI(Yb, speedY);
     if (stepperY.getExeCompleteFlag()) {
       MYB = false;
       if (debug) {

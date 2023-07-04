@@ -5,10 +5,10 @@
 #define pulY 6
 #define dirY 3
 #define Button_Down 9
-// #define Button_Stop 10
+#define Button_Stop 10
 #define Button_Up 11
-#define LimitA 10
-#define LimitB 12                                                  
+#define LimitA 12
+#define LimitB 10                                                  
 StepperMotor stepperX(pulX, dirX);
 StepperMotor stepperY(pulY, dirY);
 
@@ -22,7 +22,7 @@ float disPerRoundX = 360;
 float gearX = 1;
 int microStepX = 1600;
 float stepsPerUnitX = microStepX * gearX / disPerRoundX;
-float speedX = 500;  //chinh toc do X
+float speedX = 1400;  //chinh toc do X
 
 float disPerRoundY = 360;
 float gearY = 1; // chinh ti le hop so 1:5 nhap 5
@@ -33,7 +33,7 @@ float speedY = 100;  //chinh toc do X
 long Xa = 0;
 long Xb = 270 * stepsPerUnitX;  //vi tri X den B
 long Ya = 0;
-long Yb = 180 * stepsPerUnitY;  //vi tri Y den B
+long Yb = 300 * stepsPerUnitY;  //Khoang chay Y tu A-B
 
 
 void setup() {
@@ -47,7 +47,7 @@ void setup() {
 }
 
 void loop() {
-  // Serial.println(digitalRead(LimitB));
+  // Serial.println(digitalRead(Button_Up));
   if (digitalRead(Button_Up) == 0) {
     MXA = false;
     MXB = true;
@@ -58,7 +58,7 @@ void loop() {
     MXA = false;
     MYA = true;
     MYB = false;
-  // } else if (digitalRead(Button_Stop) == 0) {
+  // } else if (digitalRead(Button_Stop) == 1) {
   //   MXA = false;
   //   MXB = false;
   //   MYA = false;
@@ -94,8 +94,8 @@ void loop() {
         Serial.println(stepperX.getCurrentPosition());
       }
     }
-  } else if (MYA) {
-    stepperY.DRVA(Ya, speedY);
+  } else if (MYA && digitalRead(LimitA) == 1) {
+    stepperY.DRVI(-Yb, speedY);
     if (stepperY.getExeCompleteFlag()) {
       MYA = false;
       MXA = true;
@@ -105,7 +105,7 @@ void loop() {
       }
     }
   } else if (MYB) {
-    stepperY.DRVA(Yb, speedY);
+    stepperY.DRVI(Yb, speedY);
     if (stepperY.getExeCompleteFlag()) {
       MYB = false;
       if (debug) {
