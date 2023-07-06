@@ -20,18 +20,18 @@ float disPerRoundX = 360;
 float gearX = 1;
 int microStepX = 1600;
 float stepsPerUnitX = microStepX * gearX / disPerRoundX;
-float speedX = 1000;  //chinh toc do X
+float speedX = 1400;  //chinh toc do X
 
 float disPerRoundY = 360;
 float gearY = 1; // chinh ti le hop so 1:5 nhap 5
-int microStepY = 1600;
+int microStepY = 800;
 float stepsPerUnitY = microStepY * gearY / disPerRoundY;
-float speedY = 150;  //chinh toc do X
+float speedY = 200;  //chinh toc do X
 
 long Xa = 0;
-long Xb = 180 * stepsPerUnitX;  //vi tri X den B
+long Xb = 360 * stepsPerUnitX;  //vi tri X den B
 long Ya = 0;
-long Yb = 100 * stepsPerUnitY;  //vi tri Y den B
+long Yb = 3600 * stepsPerUnitY;  //vi tri Y den B
 
 
 void setup() {

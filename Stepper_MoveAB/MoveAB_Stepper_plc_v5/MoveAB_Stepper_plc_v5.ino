@@ -8,6 +8,8 @@
 #define Button_Stop A2  //D2 - Resume
 #define Button_Down A1  //D1 - Hold
 
+
+#define EN 8
 #define LimitA 10  //Y+ Y-
 #define LimitB 11  //Z+ Z-
 StepperMotor stepperX(pulX, dirX);
@@ -39,11 +41,15 @@ long Yb = 300 * stepsPerUnitY;  //Khoang chay Y tu A-B
 
 void setup() {
   Serial.begin(115200);
-  pinMode(Button_Down, INPUT_PULLUP);
+  // pinMode(Button_Down, INPUT_PULLUP);
   // pinMode(Button_Stop, INPUT_PULLUP);
-  pinMode(Button_Up, INPUT_PULLUP);
+  // pinMode(Button_Up, INPUT_PULLUP);
+  pinMode(EN, OUTPUT);
   pinMode(LimitA, INPUT_PULLUP);
   pinMode(LimitB, INPUT_PULLUP);
+  digitalWrite(EN, LOW);
+  // stepperX.DRVA(1, speedX);
+  // stepperY.DRVA(1, speedY);
   delay(1000);
 }
 
