@@ -4,15 +4,16 @@
 #define dirX 12
 #define enX 13
 
-#define Run 5
-#define Home 6
-#define Home_Limit 7
+#define Run 4
+#define Home 5
+#define Home_Limit 6
 
 StepperMotor stepperX(pulX, dirX);
 
 bool debug = true;
 bool MXA = false;
 bool MH = false;
+long t = millis();
 
 float disPerRoundX = 360;
 float gearX = 1;
@@ -38,20 +39,30 @@ void setup() {
 }
 
 void loop() {
-  // Serial.println(digitalRead(Button_Up));
+
+  // Serial.println(analogRead(A0));
+
   if (digitalRead(Run) == 0 && !MXA) {
-    while (digitalRead(Run) == 0) {
+    t = millis();
+    while (digitalRead(Run) == 0 && !MXA) {
+      Serial.println("Press Run button ");
     }
-    MXA = true;
-    Xa = Xa + Xd;
-    X = Xa * stepsPerUnitX;
+    if (millis() - t > 10) {
+      MXA = true;
+      Xa = Xa + Xd;
+      X = Xa * stepsPerUnitX;
+    }
     Serial.print("XA: ");
     Serial.println(Xa);
-  } else if (digitalRead(Home) == 0) {
-    while (digitalRead(Home) == 0) {
+  } else if (digitalRead(Home) == 0 && !MXA) {
+    t = millis();
+    while (digitalRead(Home) == 0 && !MXA) {
+      Serial.println("Press Home button ");
     }
-    MH = true;
-    Xa = 0;
+    if (millis() - t > 10) {
+      MH = true;
+      Xa = 0;
+    }
   }
 
   if (MXA) {
@@ -64,6 +75,7 @@ void loop() {
         Serial.print("Position: ");
         Serial.println(stepperX.getCurrentPosition());
       }
+      delay(10);
     }
   }
   if (MH) {
