@@ -66,10 +66,23 @@ void setup() {
     for (;;)
       ;
   }
-  oled.display();
-  delay(1000);
-  // Clear the buffer
+  // oled.display(); //CSSX BANH ONG NGOC PHAT
+  // delay(1000);
+  // // Clear the buffer
+  // oled.clearDisplay();
+
   oled.clearDisplay();
+  oled.setTextSize(1);
+  oled.setTextColor(SSD1306_WHITE);
+  oled.setCursor(20, 0);
+  oled.println("CO SO SAN XUAT");
+  oled.setCursor(10, 11);
+  oled.println("BANH ONG NGOC PHAT");
+  oled.setTextSize(2);
+  oled.setCursor(18, 35);
+  oled.println("XIN CHAO");
+  oled.display();
+  delay(2000);
 }
 
 void loop() {
@@ -89,14 +102,14 @@ void loop() {
       while (!digitalRead(Up)) {
         if (millis() - t > 1000) {
           if (speedX < maxSpeedSet) {
-            speedX++;
+            speedX += 100;
           }
           // delay(1);
           if (debug) {
             Serial.println(speedX);
           }
           oled.clearDisplay();
-          oledDisplay(4, 0, 25, speedX);  //size,x,y,value
+          oledDisplay(speedX);
         }
       }
       if (speedX < maxSpeedSet) {
@@ -112,7 +125,7 @@ void loop() {
       while (!digitalRead(Down)) {
         if (millis() - t > 1000) {
           if (speedX > 0) {
-            speedX--;
+            speedX -= 100;
           }
 
           // delay(1);
@@ -120,7 +133,7 @@ void loop() {
             Serial.println(speedX);
           }
           oled.clearDisplay();
-          oledDisplay(4, 0, 25, speedX);  //size,x,y,value
+          oledDisplay(speedX);
         }
       }
       if (speedX > 0) {
@@ -133,7 +146,7 @@ void loop() {
     }
     //***************************************
     oled.clearDisplay();
-    oledDisplay(4, 0, 25, speedX);  //size,x,y,value
+    oledDisplay(speedX);
     //***************************************
     if (!digitalRead(Run)) {
       t = millis();
@@ -143,16 +156,16 @@ void loop() {
         }
       }
       if (millis() - t > 10) {
-        MXA = false;
+        // MXA = false;
         MXB = true;
       }
     }
   } else {
     if (MXB) {
-      stepperX.DRVA(Xb, speedX);
+      stepperX.DRVI(Xb, speedX);
       if (stepperX.getExeCompleteFlag()) {
         MXB = false;
-        MXA = true;
+        // MXA = true;
         if (debug) {
           Serial.print("X go to B - Position: ");
           Serial.println(stepperX.getCurrentPosition());
@@ -160,25 +173,22 @@ void loop() {
         }
         delay(t_delay);
       }
-    } else if (MXA) {
-      stepperX.DRVA(Xa, speedX);
-      if (stepperX.getExeCompleteFlag()) {
-        MXA = false;
-        if (debug) {
-          Serial.print("X go to A - Position: ");
-          Serial.println(stepperX.getCurrentPosition());
-          Serial.println(speedX);
-        }
-      }
     }
   }
 }
 
-void oledDisplay(int size, int x, int y, float value) {
-  oled.setTextSize(size);
-  oled.setTextColor(SSD1306_WHITE);
-  oled.setCursor(x, y);
+void oledDisplay(float value) {
+  oled.setTextSize(1);
+  oled.setCursor(0, 1);
+  oled.print("CS BANH ONG NGOC PHAT");
+
+
+  oled.setTextSize(4);
+  oled.setCursor(0, 24);
   oled.print(value, 0);
+  oled.setTextSize(1);
+  oled.print("f");
+
   oled.display();
 }
 
