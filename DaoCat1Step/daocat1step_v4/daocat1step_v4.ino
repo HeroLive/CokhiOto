@@ -102,7 +102,7 @@ void loop() {
       while (!digitalRead(Up)) {
         if (millis() - t > 1000) {
           if (speedX < maxSpeedSet) {
-            speedX += 100;
+            speedX += 10;
           }
           // delay(1);
           if (debug) {
@@ -125,7 +125,7 @@ void loop() {
       while (!digitalRead(Down)) {
         if (millis() - t > 1000) {
           if (speedX > 0) {
-            speedX -= 100;
+            speedX -= 10;
           }
 
           // delay(1);
